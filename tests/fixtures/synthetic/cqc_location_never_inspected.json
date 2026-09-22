@@ -1,0 +1,21 @@
+{
+  "locationId": "1-900000002",
+  "providerId": "1-800000002",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Example Homecare Services",
+  "registrationStatus": "Registered",
+  "registrationDate": "2026-09-01",
+  "careHome": "N",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "Unit 2, Example Business Park",
+  "postalAddressTownCity": "Ilford",
+  "postalCode": "IG1 1AA",
+  "region": "London",
+  "localAuthority": "Redbridge",
+  "mainPhoneNumber": "02080000002",
+  "gacServiceTypes": [{"name": "Homecare agencies", "description": "Domiciliary care service"}],
+  "regulatedActivities": [{"name": "Personal care", "code": "RA1", "contacts": []}],
+  "currentRatings": {},
+  "historicRatings": []
+}

@@ -1,0 +1,19 @@
+{
+  "providerId": "1-800000001",
+  "organisationType": "Provider",
+  "ownershipType": "Organisation",
+  "type": "Social Care Org",
+  "name": "Example Care Group Limited",
+  "registrationStatus": "Registered",
+  "registrationDate": "2019-03-12",
+  "companiesHouseNumber": "01234567",
+  "website": "www.example-care.test",
+  "postalAddressLine1": "1 Example Road",
+  "postalAddressTownCity": "London",
+  "postalCode": "E1 6AN",
+  "region": "London",
+  "localAuthority": "Tower Hamlets",
+  "mainPhoneNumber": "02070000000",
+  "locationIds": ["1-900000001"],
+  "contacts": [{"personTitle": "Mr", "personGivenName": "John", "personFamilyName": "Example", "personRoles": ["Nominated Individual"]}]
+}

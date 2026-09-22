@@ -1,0 +1,41 @@
+{
+  "etag": "synthetic",
+  "hits": 3,
+  "kind": "search#advanced-search",
+  "top_hit": {"company_number": "16000001"},
+  "items": [
+    {
+      "company_name": "EXAMPLE HOMECARE SERVICES LTD",
+      "company_number": "16000001",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-15",
+      "kind": "search-results#company",
+      "links": {"company_profile": "/company/16000001"},
+      "registered_office_address": {"address_line_1": "Unit 2, Example Business Park", "locality": "Ilford", "postal_code": "IG1 1AA", "country": "England"},
+      "sic_codes": ["88100"]
+    },
+    {
+      "company_name": "EXAMPLE SUPPORTED LIVING LLP",
+      "company_number": "OC400001",
+      "company_status": "active",
+      "company_type": "llp",
+      "date_of_creation": "2026-09-16",
+      "kind": "search-results#company",
+      "links": {"company_profile": "/company/OC400001"},
+      "registered_office_address": {"address_line_1": "3 Example Street", "locality": "Manchester", "postal_code": "M1 1AA", "country": "England"},
+      "sic_codes": ["87900", "88100"]
+    },
+    {
+      "company_name": "EXAMPLE NURSING HOME LIMITED",
+      "company_number": "16000003",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-17",
+      "kind": "search-results#company",
+      "links": {"company_profile": "/company/16000003"},
+      "registered_office_address": {"address_line_1": "4 Example Lane", "locality": "London", "postal_code": "EC1A 1BB", "country": "England"},
+      "sic_codes": ["87100"]
+    }
+  ]
+}

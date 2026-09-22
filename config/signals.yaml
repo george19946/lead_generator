@@ -1,0 +1,31 @@
+# Signals engine configuration. Secrets (API keys) live in .env, never here.
+
+database: data/signals.db
+outputs_dir: outputs
+
+# Data protection
+retention_days: 365            # `signals purge` default
+include_personal_names: false  # registered manager / nominated individual names (personal data)
+
+sources:
+  cqc:
+    base_url: https://api.service.cqc.org.uk/public/v1
+    # Undocumented limit; conservative default until measured (see PROGRESS.md).
+    max_requests: 10
+    per_seconds: 1
+  companies_house:
+    base_url: https://api.company-information.service.gov.uk
+    # Documented limit is 600 requests per 5 minutes; stay a little under it.
+    max_requests: 550
+    per_seconds: 300
+
+# Customer regions. Each region may filter by any combination of:
+#   cqc_region:        CQC region name, e.g. "London", "South East"
+#   local_authorities: list of local authority names as CQC spells them
+#   postcode_areas:    postcode areas ("E", "SE") or districts ("SE1", "N16")
+# A lead matches a region if it matches ANY of the criteria given.
+regions:
+  london:
+    cqc_region: London
+  east-london:
+    postcode_areas: [E, IG, RM]

@@ -1,0 +1,42 @@
+{
+  "locationId": "1-900000001",
+  "providerId": "1-800000001",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Example House Care Home",
+  "registrationStatus": "Registered",
+  "registrationDate": "2019-03-12",
+  "dormancy": "N",
+  "careHome": "Y",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "1 Example Road",
+  "postalAddressTownCity": "London",
+  "postalCode": "E1 6AN",
+  "region": "London",
+  "localAuthority": "Tower Hamlets",
+  "mainPhoneNumber": "02070000001",
+  "numberOfBeds": 40,
+  "gacServiceTypes": [{"name": "Nursing homes", "description": "Care home service with nursing"}],
+  "regulatedActivities": [
+    {
+      "name": "Accommodation for persons who require nursing or personal care",
+      "code": "RA2",
+      "contacts": [
+        {"personTitle": "Ms", "personGivenName": "Jane", "personFamilyName": "Example", "personRoles": ["Registered Manager"]}
+      ]
+    }
+  ],
+  "currentRatings": {
+    "overall": {
+      "rating": "Requires improvement",
+      "reportDate": "2026-09-16",
+      "reportLinkId": "aaaaaaaa-0000-0000-0000-000000000001",
+      "keyQuestionRatings": [{"name": "Safe", "rating": "Requires improvement", "reportDate": "2026-09-16"}]
+    },
+    "reportDate": "2026-09-16"
+  },
+  "historicRatings": [
+    {"reportDate": "2023-05-02", "reportLinkId": "aaaaaaaa-0000-0000-0000-000000000000", "overall": {"rating": "Good"}}
+  ],
+  "lastInspection": {"date": "2026-08-01"}
+}

@@ -1,0 +1,11 @@
+{
+  "changes": ["1-900000001", "1-900000002"],
+  "firstPageUri": "/changes/location?page=1&perPage=1000&startTimestamp=2026-09-14T00:00:00Z&endTimestamp=2026-09-21T00:00:00Z",
+  "lastPageUri": "/changes/location?page=1&perPage=1000&startTimestamp=2026-09-14T00:00:00Z&endTimestamp=2026-09-21T00:00:00Z",
+  "nextPageUri": null,
+  "page": 1,
+  "perPage": 1000,
+  "previousPageUri": null,
+  "total": 2,
+  "totalPages": 1
+}
