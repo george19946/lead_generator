@@ -11,6 +11,15 @@ from typing import Any
 import httpx
 import pytest
 
+from signals.db.store import Store
+from signals.http import RateLimiter
+from signals.sources.companies_house.client import CompaniesHouseClient
+from signals.sources.companies_house.source import CompaniesHouseSource
+from signals.sources.cqc.client import CqcClient
+from signals.sources.cqc.source import CqcSource
+from signals.verticals.care import CARE_SIC_CODES
+from tests.fakes import NOW, FakeCqc
+
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
@@ -48,3 +57,45 @@ def fixture() -> Callable[[str], Any]:
 
 def no_sleep(_: float) -> None:
     pass
+
+
+# --- Sources wired to fake APIs (collection and CLI tests) ------------------------
+
+@pytest.fixture
+def fake():
+    return FakeCqc()
+
+
+@pytest.fixture
+def clock():
+    state = {"now": NOW}
+    return state
+
+
+@pytest.fixture
+def cqc(fake, clock):
+    client = CqcClient("k", "https://cqc.test/public/v1", RateLimiter(1000, 1),
+                       transport=httpx.MockTransport(fake.handler), sleep=no_sleep)
+    return CqcSource(client, clock=lambda: clock["now"])
+
+
+@pytest.fixture
+def ch_calls():
+    return []
+
+
+@pytest.fixture
+def ch(ch_calls, clock):
+    def handler(request):
+        ch_calls.append(dict(request.url.params))
+        return httpx.Response(200, json=load_fixture("synthetic/ch_advanced_search.json"))
+
+    client = CompaniesHouseClient("k", "https://ch.test", RateLimiter(1000, 1),
+                                  transport=httpx.MockTransport(handler), sleep=no_sleep)
+    return CompaniesHouseSource(client, CARE_SIC_CODES, clock=lambda: clock["now"])
+
+
+@pytest.fixture
+def store():
+    with Store.open(":memory:") as s:
+        yield s

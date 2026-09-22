@@ -1,5 +1,65 @@
 # Progress
 
+## Milestone 2: SQLite store, snapshots, backfill and sync (code done; full backfill waiting on go-ahead)
+
+### Done
+- `db/schema.py`, `db/store.py` (stdlib sqlite3, WAL, schema version in `PRAGMA user_version`):
+  - `entities`: the latest sanitised payload per (source, entity_type, entity_id), with first seen, last fetched,
+    last changed and `gone_at` (set on a 404).
+  - `snapshots`: one row per **distinct** version. A new row is written only when the payload hash changes.
+    `snapshot_as_of(t)` gives the week-on-week view the feeds need in milestone 3.
+  - `sync_state` (cursors), `runs` (audit trail with stats), and `lead_events`, which is unique on
+    (vertical, feed, entity_key, trigger_key) and gets filled in milestone 3.
+  - `purge(before)`: deletes superseded snapshots, entities gone before the cutoff, old lead events and finished runs.
+    It always keeps each live entity's current version.
+- `core/regions.py`: `RegionMatcher` (a region matches on ANY of CQC region, local authority, postcode area/district)
+  and postcode parsing. "E1" matches E1 and E1W but not E14; "EC1" matches EC1A.
+- Source adapters `CqcSource` / `CompaniesHouseSource` turn API responses into `RawRecord`s. CQC payloads are
+  sanitised (personal names stripped) **before** they reach the store.
+- `verticals/care/collect.py`:
+  - `CareScope`: region and LA regions use filtered CQC list queries. Postcode regions use the full adult social care
+    list, filtered locally on `postalCode`. With no regions configured, or with `--all-england`, the scope is all of England.
+  - `plan_backfill` makes list calls only and returns the in-scope IDs plus an estimate (calls and minutes).
+  - `run_backfill` fetches:
+    - every in-scope location's detail;
+    - the provider of every **registered** location;
+    - N days of care-SIC incorporations (all of England, filtered by region at output time).
+    It then sets the cursors. It **resumes**: records fetched within `--fresh-hours` (default 24) are skipped.
+    Each record commits as it's written. A failed record is logged, and the run carries on and is marked `partial`.
+  - `run_sync`:
+    - reads CQC changes since the cursor (national, IDs only) and fetches each changed location's detail;
+    - keeps it if it's in scope or already tracked, and marks tracked 404s as gone;
+    - fetches changed providers that are tracked, plus new providers of new locations;
+    - re-reads Companies House incorporations with a 7-day overlap.
+    The cursors only advance when there were no failures.
+- CLI:
+  - `signals init`;
+  - `signals backfill [--days 90] [--dry-run] [--yes] [--all-england] [--fresh-hours 24]`, which prints the estimate and asks before fetching;
+  - `signals sync`;
+  - `signals purge [--older-than 365d]` (default `retention_days`).
+- 111 offline tests, including a fake CQC API (`tests/fakes.py`) covering scope, resume, failures, sync and cursors.
+
+### Live checks (2026-09-22)
+- `backfill --dry-run` (66 list calls, 51 s): **7,705 in-scope locations** for the configured regions:
+  - London: 7,492;
+  - an extra 213 from the east-london postcode areas that lie outside CQC London, e.g. IG10 Loughton and RM16 Grays.
+- Small end-to-end backfill on a throwaway DB, one local authority (Rutland): 52 locations, 22 providers
+  (**0.42 providers per location**, close to the 0.4 used in the estimate), 180 companies, 75 CQC calls.
+- Real weekly sync on that DB, with the cursor wound back 7 days:
+  - 871 changed locations and 378 changed providers nationally, all fetched: 873 calls in 4 min 32 s (**0.31 s per call**);
+  - 860 out of scope, and 11 were 404s for untracked IDs (now counted as `location_not_found`).
+  - The estimate now assumes 0.3 s per CQC call.
+- **Full backfill estimate (London + east-london, 90 days):**
+  - CQC: 7,705 location details + about 3,100 provider details ≈ **10.8k calls, about 55 min** at 0.3 s each;
+  - Companies House: about 13 calls.
+- Weekly sync estimate: about 870 national location details + tracked providers ≈ **5 min**.
+
+### Next
+- **Waiting on the user:** where to run the full backfill. This cloud container is ephemeral, so `data/signals.db`
+  is lost when the session ends. The backfill should run where the database will live (the user's machine or server),
+  or the DB has to be kept some other way.
+- Then milestone 3: feeds (new companies, never inspected, poor ratings), CH↔CQC matching, lead events.
+
 ## Milestone 1: scaffold, config, API clients (done: both APIs verified live)
 
 ### Done
@@ -60,8 +120,6 @@
   - A weekly run ≈ 1,250 CQC detail calls (≈ 4 min) + 1–2 Companies House calls.
   - To be firmed up in M2.
 
-### Next
-- Milestone 2: SQLite schema, snapshot storage, `init`, `backfill` (with the call estimate shown to the user first).
 
 ### API facts: confirmed vs the brief (official docs, 2026-09-22)
 1. ✅ CQC base `https://api.service.cqc.org.uk/public/v1` (alternative server: `api-management.service.cqc.org.uk`).
@@ -95,7 +153,7 @@
 
 ## Milestones
 1. Scaffold + clients + smoke test: done (both APIs verified live)
-2. SQLite schema, snapshots, backfill: not started
+2. SQLite schema, snapshots, backfill: code done, full live backfill waiting on go-ahead
 3. Feeds + CH↔CQC matching + tests: not started
 4. CSV/HTML output, region filtering, `sample`: not started
 5. README, cron example, limitations, final PRIVACY_NOTES: not started

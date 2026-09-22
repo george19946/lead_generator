@@ -14,16 +14,20 @@ uv sync                                  # install (Python 3.12, managed by uv)
 uv run pytest                            # tests: offline only, real network raises
 uv run signals smoke --n 5               # live smoke test (needs keys + network access)
 uv run signals smoke --save-fixtures     # ...and write sanitised fixtures to tests/fixtures/
-# Planned (later milestones): init, backfill --days 90, run --vertical care --week-ending YYYY-MM-DD,
-#                             sample --region london, purge --older-than 365d
+uv run signals init                      # create the SQLite DB (config `database`)
+uv run signals backfill --dry-run        # list the scope, print the API-call estimate (list calls only)
+uv run signals backfill --days 90        # baseline; asks first, resumes if re-run (--fresh-hours)
+uv run signals sync                      # fetch changes since the last backfill/sync
+uv run signals purge --older-than 365d
+# Planned (later milestones): run --vertical care --week-ending YYYY-MM-DD, sample --region london
 ```
 
 ## Layout
 - `src/signals/core/`: vertical-agnostic interfaces (Source, Feed, Vertical, region filter,
   legal form/PECR, matching, runner). **Nothing care-specific goes here.**
 - `src/signals/sources/<source>/`: API client, pydantic models and Source adapter per register.
-- `src/signals/verticals/care/`: care feeds, SIC codes, CH↔CQC linking.
-- `src/signals/db/`: SQLite schema and store (stdlib sqlite3).
+- `src/signals/verticals/care/`: care feeds, SIC codes, CH↔CQC linking. `collect.py`: scope, backfill and sync.
+- `src/signals/db/`: SQLite schema and store (stdlib sqlite3). A snapshot is written only when a payload changes.
 - `src/signals/output/`: CSV and jinja2 HTML digest.
 - `config/signals.yaml`: non-secret config, including customer regions. Secrets go in `.env` only.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
