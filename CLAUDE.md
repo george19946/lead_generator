@@ -30,14 +30,17 @@ uv run signals smoke --save-fixtures     # ...and write sanitised fixtures to te
 
 ## Key decisions
 - **Trust the live API over the brief.** Log any difference in PROGRESS.md and tell the user.
-- CQC: base `https://api.service.cqc.org.uk/public/v1`, header `Ocp-Apim-Subscription-Key`.
-  Changes endpoints: `/changes/{location|provider}?startTimestamp&endTimestamp&page`
-  (UTC `%Y-%m-%dT%H:%M:%SZ`). Verify with `signals smoke`.
+- CQC ("Syndication" product): base `https://api.service.cqc.org.uk/public/v1`, header `Ocp-Apim-Subscription-Key`.
+  Changes: `/changes/{location|provider}?startTimestamp&endTimestamp&page&perPage` (UTC `%Y-%m-%dT%H:%M:%SZ`,
+  start inclusive, end exclusive). Official operation specs are readable from
+  `https://api-portal.service.cqc.org.uk/developer/apis/syndication/operations?api-version=2022-04-01-preview`.
+- CQC ratings live in `currentRatings.overall` **or** the Single Assessment Framework `assessment[].ratings.asgRatings[]`.
+  Always use `CqcLocation.overall_rating`, which checks both and normalises the spelling.
 - Companies House: `/advanced-search/companies`, basic auth (key as username). Size ≤ 5000,
   errors past start_index ≈ 10,000, so queries are sliced by week and split further if needed. A 404 means no results.
 - Rate limiting: a sliding-window limiter per source (config `sources.*.max_requests/per_seconds`),
   plus exponential backoff with jitter on 429/5xx/transport errors, honouring Retry-After.
-- Personal data: `regulatedActivities[].contacts` and other `person*` fields are stripped before storage
+- Personal data: `contacts`, `nominatedIndividual` and other `person*` fields are stripped before storage
   unless `include_personal_names: true`. Sole-trader provider names are redacted in committed fixtures.
 - Never-inspected feed: the digest and feed CSV show **new entries only**. `never_inspected_all.csv` holds the full list.
 - Idempotency: lead events are unique on (vertical, feed, entity_key, trigger_key). Outputs are

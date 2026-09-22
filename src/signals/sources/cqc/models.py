@@ -6,6 +6,7 @@ Field names follow the CQC API's camelCase; verify against live responses with `
 from __future__ import annotations
 
 import datetime as dt
+from dataclasses import dataclass
 from datetime import date
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -16,15 +17,29 @@ class CqcModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="ignore")
 
 
+def _date_prefix(v: object) -> object:
+    """CQC dates are sometimes datetimes or empty strings; keep the YYYY-MM-DD part."""
+    return v[:10] if isinstance(v, str) and v else (v or None)
+
+
+CANONICAL_RATINGS = {
+    r.lower(): r for r in ("Outstanding", "Good", "Requires improvement", "Inadequate", "Insufficient evidence to rate")
+}
+
+
+def normalise_rating(rating: str | None) -> str | None:
+    """Map rating spellings ("Requires Improvement", "requires improvement") to one canonical form."""
+    if not rating or not rating.strip():
+        return None
+    return CANONICAL_RATINGS.get(rating.strip().lower(), rating.strip())
+
+
 class Rating(CqcModel):
     rating: str | None = None
     report_date: date | None = None
     report_link_id: str | None = None
 
-    @field_validator("report_date", mode="before")
-    @classmethod
-    def _date_only(cls, v: object) -> object:
-        return v[:10] if isinstance(v, str) and v else (v or None)
+    _dates = field_validator("report_date", mode="before")(_date_prefix)
 
 
 class CurrentRatings(CqcModel):
@@ -36,10 +51,37 @@ class HistoricRating(CqcModel):
     report_link_id: str | None = None
     overall: Rating | None = None
 
-    @field_validator("report_date", mode="before")
-    @classmethod
-    def _date_only(cls, v: object) -> object:
-        return v[:10] if isinstance(v, str) and v else (v or None)
+    _dates = field_validator("report_date", mode="before")(_date_prefix)
+
+
+class AsgRating(CqcModel):
+    """A rating under the Single Assessment Framework (per assessment service group)."""
+
+    assessment_plan_id: str | None = None
+    name: str | None = None
+    rating: str | None = None
+    status: str | None = None
+    assessment_date: date | None = None
+
+    _dates = field_validator("assessment_date", mode="before")(_date_prefix)
+
+
+class AssessmentRatings(CqcModel):
+    asg_ratings: list[AsgRating] = []
+
+
+class Assessment(CqcModel):
+    assessment_plan_published_date_time: date | None = None
+    ratings: AssessmentRatings | None = None
+
+    _dates = field_validator("assessment_plan_published_date_time", mode="before")(_date_prefix)
+
+
+@dataclass(frozen=True)
+class EffectiveRating:
+    rating: str  # canonical spelling, see normalise_rating
+    published: date | None
+    framework: str  # "currentRatings" or "assessment"
 
 
 class Named(CqcModel):
@@ -71,6 +113,7 @@ class _Addressed(CqcModel):
     current_ratings: CurrentRatings | None = None
     historic_ratings: list[HistoricRating] = []
     last_inspection: LastInspection | None = None
+    assessment: list[Assessment] = []
 
     @property
     def address(self) -> str:
@@ -83,9 +126,23 @@ class _Addressed(CqcModel):
         return ", ".join(p.strip() for p in parts if p and p.strip())
 
     @property
-    def overall_rating(self) -> Rating | None:
+    def overall_rating(self) -> EffectiveRating | None:
+        """The current overall rating, from `currentRatings` or else the newer `assessment` block."""
         overall = self.current_ratings.overall if self.current_ratings else None
-        return overall if overall and overall.rating else None
+        if overall and normalise_rating(overall.rating):
+            return EffectiveRating(normalise_rating(overall.rating), overall.report_date, "currentRatings")
+        best: EffectiveRating | None = None
+        best_key: tuple[date, date] | None = None
+        for assessment in self.assessment:
+            for asg in assessment.ratings.asg_ratings if assessment.ratings else []:
+                rating = normalise_rating(asg.rating)
+                if not rating or (asg.status and asg.status.strip().lower() != "current"):
+                    continue
+                published = assessment.assessment_plan_published_date_time or asg.assessment_date
+                key = (published or date.min, asg.assessment_date or date.min)
+                if best_key is None or key > best_key:
+                    best, best_key = EffectiveRating(rating, published, "assessment"), key
+        return best
 
 
 class CqcLocation(_Addressed):

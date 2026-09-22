@@ -15,6 +15,7 @@
   "region": "London",
   "localAuthority": "Tower Hamlets",
   "mainPhoneNumber": "02070000001",
+  "website": "www.example-care.test",
   "numberOfBeds": 40,
   "gacServiceTypes": [{"name": "Nursing homes", "description": "Care home service with nursing"}],
   "regulatedActivities": [

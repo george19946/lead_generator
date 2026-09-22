@@ -1,8 +1,8 @@
 """Strip personal data from raw CQC records before they are stored or saved as fixtures.
 
-CQC records name registered managers and nominated individuals in `contacts` arrays
-(e.g. under `regulatedActivities[]`), using `person*` keys. We drop these unless the
-config explicitly opts in via `include_personal_names`.
+CQC records name registered managers in `contacts` arrays (location `regulatedActivities[]`,
+provider top level) and nominated individuals in `regulatedActivities[].nominatedIndividual`,
+using `person*` keys. We drop these unless the config opts in via `include_personal_names`.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 PERSON_KEYS = frozenset({"personTitle", "personGivenName", "personFamilyName", "personRoles"})
-CONTACT_KEYS = frozenset({"contacts"})
+CONTACT_KEYS = frozenset({"contacts", "nominatedIndividual"})
 
 
 def strip_personal_names(record: Any) -> Any:

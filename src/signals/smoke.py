@@ -24,7 +24,7 @@ EXPECTED_FIELDS = {
     "location": [
         "locationId", "providerId", "name", "registrationStatus", "registrationDate",
         "postalCode", "region", "localAuthority", "mainPhoneNumber", "inspectionDirectorate",
-        "gacServiceTypes", "regulatedActivities", "currentRatings",
+        "gacServiceTypes", "regulatedActivities", "website",
     ],
     "provider": [
         "providerId", "name", "registrationStatus", "registrationDate", "postalCode",
@@ -130,10 +130,12 @@ def run_smoke(
     for loc in locations:
         _check_fields("location", loc, report)
         _parse(CqcLocation, loc, report)
-        rating = (loc.get("currentRatings") or {}).get("overall")
+        rating = CqcLocation.model_validate(loc).overall_rating
+        frameworks = [k for k in ("currentRatings", "assessment") if loc.get(k)]
         report.add(
             f"  location {loc.get('locationId')} | {loc.get('name')} | {loc.get('inspectionDirectorate')} | "
-            f"{loc.get('region')} | reg {loc.get('registrationDate')} | rating {rating and rating.get('rating')}"
+            f"{loc.get('region')} | reg {loc.get('registrationDate')} | "
+            f"rating {rating.rating if rating else None} ({rating.framework if rating else '-'}; present: {frameworks})"
         )
         extra = sorted(set(loc) - set(EXPECTED_FIELDS["location"]))
         report.add(f"    other keys: {extra}")

@@ -27,7 +27,8 @@ def test_location_model_reads_key_fields():
     assert loc.provider_id == "1-800000001"
     assert loc.registration_date == date(2019, 3, 12)
     assert loc.overall_rating.rating == "Requires improvement"
-    assert loc.overall_rating.report_date == date(2026, 9, 16)
+    assert loc.overall_rating.published == date(2026, 9, 16)
+    assert loc.overall_rating.framework == "currentRatings"
     assert loc.historic_ratings[0].overall.rating == "Good"
     assert loc.address == "1 Example Road, London"
     assert loc.profile_url == "https://www.cqc.org.uk/location/1-900000001"
@@ -52,3 +53,32 @@ def test_ch_company_model():
     assert company.date_of_creation == date(2026, 9, 15)
     assert company.registered_office_address.postal_code == "IG1 1AA"
     assert company.url.endswith("/company/16000001")
+
+
+def test_rating_from_single_assessment_framework_when_no_current_ratings():
+    loc = CqcLocation.model_validate(load_fixture("synthetic/cqc_location_assessment_only.json"))
+    rating = loc.overall_rating
+    assert rating.rating == "Inadequate"
+    assert rating.framework == "assessment"
+    assert rating.published == date(2026, 9, 17)
+    assert loc.website == "www.example-lodge.test"
+
+
+def test_normalise_rating_spellings():
+    from signals.sources.cqc.models import normalise_rating
+
+    assert normalise_rating("Requires Improvement") == "Requires improvement"
+    assert normalise_rating(" inadequate ") == "Inadequate"
+    assert normalise_rating("") is None
+    assert normalise_rating("Something new") == "Something new"
+
+
+def test_strip_nominated_individual():
+    provider = {
+        "providerId": "1-1",
+        "regulatedActivities": [
+            {"name": "Personal care", "nominatedIndividual": {"personTitle": "Ms", "personGivenName": "Mary", "personFamilyName": "Jones"}}
+        ],
+    }
+    clean = strip_personal_names(provider)
+    assert clean["regulatedActivities"] == [{"name": "Personal care"}]

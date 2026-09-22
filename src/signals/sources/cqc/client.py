@@ -57,11 +57,15 @@ class CqcClient:
     def request_count(self) -> int:
         return self.api.request_count
 
-    def changes_page(self, entity: EntityType, start: datetime, end: datetime, page: int = 1) -> dict:
+    def changes_page(
+        self, entity: EntityType, start: datetime, end: datetime, page: int = 1, per_page: int = 1000
+    ) -> dict:
+        """One page of changed IDs. The window is inclusive of start, exclusive of end."""
         params = {
             "startTimestamp": format_timestamp(start),
             "endTimestamp": format_timestamp(end),
             "page": page,
+            "perPage": per_page,
         }
         return self.api.get_json(f"changes/{entity}", params) or {}
 

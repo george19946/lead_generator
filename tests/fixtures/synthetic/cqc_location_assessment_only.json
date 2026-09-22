@@ -1,0 +1,37 @@
+{
+  "locationId": "1-900000003",
+  "providerId": "1-800000003",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Example Lodge",
+  "registrationStatus": "Registered",
+  "registrationDate": "2021-06-01",
+  "careHome": "Y",
+  "inspectionDirectorate": "Adult social care",
+  "website": "www.example-lodge.test",
+  "postalAddressLine1": "5 Example Avenue",
+  "postalAddressTownCity": "Croydon",
+  "postalCode": "CR0 1AA",
+  "region": "London",
+  "localAuthority": "Croydon",
+  "mainPhoneNumber": "02080000003",
+  "gacServiceTypes": [{"name": "Residential homes", "description": "Care home service without nursing"}],
+  "regulatedActivities": [{"name": "Accommodation for persons who require nursing or personal care", "code": "RA2", "contacts": []}],
+  "historicRatings": [
+    {"reportDate": "2022-02-10", "reportLinkId": "bbbbbbbb-0000-0000-0000-000000000001", "overall": {"rating": "Good"}}
+  ],
+  "assessmentServiceGroup": [
+    {"assessmentServiceId": "asg-001", "assessmentServiceName": "Care Homes", "status": "Active", "startDate": "2023-05-16", "endDate": "", "assessmentServiceType": "Rated"}
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2026-09-17T09:30:00",
+      "ratings": {
+        "asgRatings": [
+          {"assessmentPlanId": "AP9001", "title": "Assessment for Example Lodge", "assessmentDate": "2026-08-20", "assessmentPlanStatus": "Active", "name": "Care Homes", "rating": "Inadequate", "status": "Current"},
+          {"assessmentPlanId": "AP8001", "title": "Earlier assessment", "assessmentDate": "2025-01-10", "assessmentPlanStatus": "Closed", "name": "Care Homes", "rating": "Requires Improvement", "status": "Superseded"}
+        ]
+      }
+    }
+  ]
+}
