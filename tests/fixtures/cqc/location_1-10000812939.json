@@ -1,0 +1,272 @@
+{
+  "brandId": "BD671",
+  "brandName": "BRAND Lovett Care",
+  "careHome": "Y",
+  "constituency": "Wirral West",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2023-04-04",
+          "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2023-04-04",
+          "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2023-04-04",
+          "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2023-04-04",
+          "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2023-04-04",
+          "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2023-04-04",
+      "reportLinkId": "98b09743-38b0-423d-922e-2917ca5dff82"
+    },
+    "reportDate": "2023-04-04"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Care home service with nursing",
+      "name": "Nursing homes"
+    }
+  ],
+  "historicRatings": [
+    {
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Effective",
+            "rating": "Requires improvement"
+          }
+        ],
+        "rating": "Requires improvement"
+      },
+      "reportDate": "2022-05-24",
+      "reportLinkId": "d6644624-ab4c-498a-96f7-cb8a32f65a5b"
+    },
+    {
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Inspected but not rated"
+          }
+        ],
+        "rating": "Inspected but not rated"
+      },
+      "reportDate": "2022-02-03",
+      "reportLinkId": "f98c8044-d349-4627-bf58-dd92923ca81e"
+    },
+    {
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Inspected but not rated"
+          }
+        ],
+        "rating": "Inspected but not rated"
+      },
+      "reportDate": "2021-04-15",
+      "reportLinkId": "b89b15f8-a095-46c0-8810-227a3c94539c"
+    },
+    {
+      "organisationId": "1-2267307649",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Good"
+      },
+      "reportDate": "2018-06-21",
+      "reportLinkId": "5248314a-6cc0-4802-a91e-740e680ca624"
+    },
+    {
+      "organisationId": "1-2267307649",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Requires improvement"
+      },
+      "reportDate": "2017-04-25",
+      "reportLinkId": "c04ff578-25d2-4f0a-b4a5-c750be73fc8a"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S1",
+      "name": "Residential social care",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2023-02-21"
+  },
+  "lastReport": {
+    "publicationDate": "2023-04-04"
+  },
+  "localAuthority": "Wirral",
+  "locationId": "1-10000812939",
+  "locationTypes": [],
+  "mainPhoneNumber": "01516431271",
+  "name": "Charlotte House",
+  "numberOfBeds": 103,
+  "odsCode": "VNH4Q",
+  "onspdCcgCode": "E38000208",
+  "onspdCcgName": "NHS Wirral CCG",
+  "onspdIcbCode": "E54000008",
+  "onspdIcbName": "NHS Cheshire and Merseyside Integrated Care Board",
+  "onspdLatitude": 53.3455313,
+  "onspdLongitude": -3.0025802,
+  "organisationType": "Location",
+  "postalAddressCounty": "Merseyside",
+  "postalAddressLine1": "Church Road",
+  "postalAddressLine2": "Bebington",
+  "postalAddressTownCity": "Wirral",
+  "postalCode": "CH63 3DZ",
+  "providerId": "1-101658918",
+  "region": "North West",
+  "registrationDate": "2020-12-18",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA2",
+      "name": "Accommodation for persons who require nursing or personal care"
+    },
+    {
+      "code": "RA5",
+      "name": "Treatment of disease, disorder or injury"
+    }
+  ],
+  "relationships": [
+    {
+      "reason": "New Provider",
+      "relatedLocationId": "1-2267307649",
+      "relatedLocationName": "Charlotte House",
+      "type": "HSCA Predecessor"
+    }
+  ],
+  "reports": [
+    {
+      "firstVisitDate": "2023-02-21",
+      "linkId": "98b09743-38b0-423d-922e-2917ca5dff82",
+      "reportDate": "2023-04-04",
+      "reportType": "Location",
+      "reportUri": "/reports/98b09743-38b0-423d-922e-2917ca5dff82?20230404120000"
+    },
+    {
+      "firstVisitDate": "2022-03-30",
+      "linkId": "d6644624-ab4c-498a-96f7-cb8a32f65a5b",
+      "reportDate": "2022-05-24",
+      "reportType": "Location",
+      "reportUri": "/reports/d6644624-ab4c-498a-96f7-cb8a32f65a5b?20220524120000"
+    },
+    {
+      "firstVisitDate": "2022-01-06",
+      "linkId": "f98c8044-d349-4627-bf58-dd92923ca81e",
+      "reportDate": "2022-02-03",
+      "reportType": "Location",
+      "reportUri": "/reports/f98c8044-d349-4627-bf58-dd92923ca81e?20220203130000"
+    },
+    {
+      "firstVisitDate": "2021-02-18",
+      "linkId": "b89b15f8-a095-46c0-8810-227a3c94539c",
+      "reportDate": "2021-04-15",
+      "reportType": "Location",
+      "reportUri": "/reports/b89b15f8-a095-46c0-8810-227a3c94539c?20210419120000"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "42024400"
+}

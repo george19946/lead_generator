@@ -1,0 +1,51 @@
+{
+  "brandId": "BD393",
+  "brandName": "BRAND Right at Home",
+  "companiesHouseNumber": "07914786",
+  "constituency": "West Worcestershire",
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2019-05-02"
+  },
+  "localAuthority": "Worcestershire",
+  "locationIds": [
+    "1-10324127390",
+    "1-1713393836",
+    "1-421218183"
+  ],
+  "mainPhoneNumber": "01684568001",
+  "name": "Quality Care and Companionship Ltd",
+  "odsCode": "AX4D",
+  "onspdIcbCode": "E54000019",
+  "onspdIcbName": "NHS Herefordshire and Worcestershire Integrated Care Board",
+  "onspdLatitude": 52.0883993,
+  "onspdLongitude": -2.2732963,
+  "organisationType": "Provider",
+  "ownershipType": "Organisation",
+  "postalAddressLine1": "Unit 6, Cygnet Business Centre",
+  "postalAddressLine2": "Worcester Road",
+  "postalAddressTownCity": "Worcester",
+  "postalCode": "WR8 0EA",
+  "providerId": "1-420633328",
+  "region": "West Midlands",
+  "registrationDate": "2012-06-08",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [],
+  "type": "Social Care Org",
+  "uprn": "10024317848",
+  "website": "www.acercare.co.uk"
+}

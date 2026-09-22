@@ -1,0 +1,223 @@
+{
+  "brandId": "BD671",
+  "brandName": "BRAND Lovett Care",
+  "careHome": "Y",
+  "constituency": "Bury South",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2021-07-15",
+          "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2021-07-15",
+          "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2021-07-15",
+          "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2021-07-15",
+          "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2021-07-15",
+          "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2021-07-15",
+      "reportLinkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435"
+    },
+    "reportDate": "2021-07-15"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Care home service with nursing",
+      "name": "Nursing homes"
+    }
+  ],
+  "historicRatings": [
+    {
+      "organisationId": "1-310971943",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Good"
+      },
+      "reportDate": "2018-08-17",
+      "reportLinkId": "7333cae3-1dcd-44bb-a638-f1cb469a0d75"
+    },
+    {
+      "organisationId": "1-310971943",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Good"
+      },
+      "reportDate": "2016-06-08",
+      "reportLinkId": "74843667-12f3-4915-b5cc-47f63f296f1a"
+    },
+    {
+      "organisationId": "1-310971943",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Requires improvement"
+      },
+      "reportDate": "2015-08-17",
+      "reportLinkId": "bdf9bced-40c4-4987-a240-5726b7014b8a"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S1",
+      "name": "Residential social care",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2021-05-27"
+  },
+  "lastReport": {
+    "publicationDate": "2021-07-15"
+  },
+  "localAuthority": "Bury",
+  "locationId": "1-10000813008",
+  "locationTypes": [],
+  "mainPhoneNumber": "01617961811",
+  "name": "Regency Care Centre",
+  "numberOfBeds": 60,
+  "odsCode": "VNH4R",
+  "onspdCcgCode": "E38000024",
+  "onspdCcgName": "NHS Bury CCG",
+  "onspdIcbCode": "E54000057",
+  "onspdIcbName": "NHS Greater Manchester Integrated Care Board",
+  "onspdLatitude": 53.55848,
+  "onspdLongitude": -2.2953417,
+  "organisationType": "Location",
+  "postalAddressCounty": "Greater Manchester",
+  "postalAddressLine1": "140 Lilly Hill",
+  "postalAddressLine2": "Whitefield",
+  "postalAddressTownCity": "Bury",
+  "postalCode": "M45 7SG",
+  "providerId": "1-101658918",
+  "region": "North West",
+  "registrationDate": "2020-12-18",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA2",
+      "name": "Accommodation for persons who require nursing or personal care"
+    },
+    {
+      "code": "RA5",
+      "name": "Treatment of disease, disorder or injury"
+    }
+  ],
+  "relationships": [
+    {
+      "reason": "New Provider",
+      "relatedLocationId": "1-310971943",
+      "relatedLocationName": "Regency Care Centre",
+      "type": "HSCA Predecessor"
+    }
+  ],
+  "reports": [
+    {
+      "firstVisitDate": "2021-05-24",
+      "linkId": "1c4872f1-42bd-4399-93cc-9b554bd2b435",
+      "reportDate": "2021-07-15",
+      "reportType": "Location",
+      "reportUri": "/reports/1c4872f1-42bd-4399-93cc-9b554bd2b435?20211030120000"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Physical disabilities"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "100012437209"
+}

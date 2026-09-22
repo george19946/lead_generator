@@ -1,0 +1,47 @@
+{
+  "companiesHouseNumber": "11593362",
+  "constituency": "Bridgwater",
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2022-05-03"
+  },
+  "localAuthority": "Somerset",
+  "locationIds": [
+    "1-10285412143"
+  ],
+  "mainPhoneNumber": "07888376335",
+  "name": "Caringhearts Support Services Ltd",
+  "odsCode": "C2HH",
+  "onspdIcbCode": "E54000038",
+  "onspdIcbName": "NHS Somerset Integrated Care Board",
+  "onspdLatitude": 51.0887302,
+  "onspdLongitude": -2.906969,
+  "organisationType": "Provider",
+  "ownershipType": "Organisation",
+  "postalAddressLine1": "Unit 3, Thorngrove Barns",
+  "postalAddressLine2": "Main Road, Middlezoy",
+  "postalAddressTownCity": "Bridgwater",
+  "postalCode": "TA7 0PD",
+  "providerId": "1-9126760778",
+  "region": "South West",
+  "registrationDate": "2021-01-28",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [],
+  "type": "Social Care Org",
+  "uprn": "10023415117",
+  "website": "www.caringheartsuk.org"
+}

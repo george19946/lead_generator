@@ -1,0 +1,18 @@
+{
+  "changes": [
+    "1-10204941951",
+    "1-10223702130",
+    "1-10285412143",
+    "1-10324127390",
+    "1-10365865585"
+  ],
+  "firstPageUri": "/changes/location?page=1&perPage=1000&startTimeStamp=2026-09-15T20:29:58Z&endTimeStamp=2026-09-22T20:29:58Z",
+  "lastPageUri": "/changes/location?page=1&perPage=1000&startTimeStamp=2026-09-15T20:29:58Z&endTimeStamp=2026-09-22T20:29:58Z",
+  "nextPageUri": null,
+  "page": 1,
+  "perPage": 1000,
+  "previousPageUri": null,
+  "total": 871,
+  "totalPages": 1,
+  "uri": "/changes/location?page=1&perPage=1000&startTimeStamp=2026-09-15T20:29:58Z&endTimeStamp=2026-09-22T20:29:58Z"
+}

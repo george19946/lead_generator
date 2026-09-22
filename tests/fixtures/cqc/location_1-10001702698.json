@@ -1,0 +1,70 @@
+{
+  "brandId": "BD307",
+  "brandName": "BRAND City and County Healthcare Group",
+  "careHome": "N",
+  "constituency": "Stoke-on-Trent Central",
+  "deregistrationDate": "2021-08-02",
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Domiciliary care service",
+      "name": "Homecare agencies"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "localAuthority": "Stoke-on-Trent",
+  "locationId": "1-10001702698",
+  "locationTypes": [],
+  "mainPhoneNumber": "01782433130",
+  "name": "Custom Care (North Staffs)",
+  "numberOfBeds": 0,
+  "odsCode": "VNH4T",
+  "onspdCcgCode": "E38000175",
+  "onspdCcgName": "NHS Stoke on Trent CCG",
+  "onspdIcbCode": "E54000010",
+  "onspdIcbName": "NHS Staffordshire and Stoke-on-Trent Integrated Care Board",
+  "onspdLatitude": 52.9973466,
+  "onspdLongitude": -2.1175968,
+  "organisationType": "Location",
+  "postalAddressLine1": "Marcus House",
+  "postalAddressLine2": "Parkhall Road",
+  "postalAddressTownCity": "Stoke-on-trent",
+  "postalCode": "ST3 5XA",
+  "providerId": "1-101669407",
+  "region": "West Midlands",
+  "registrationDate": "2020-12-22",
+  "registrationStatus": "Deregistered",
+  "regulatedActivities": [],
+  "relationships": [],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "10091886934",
+  "website": "www.customcare.co.uk"
+}

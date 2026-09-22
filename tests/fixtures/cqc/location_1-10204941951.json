@@ -1,0 +1,127 @@
+{
+  "brandId": "BD504",
+  "brandName": "BRAND Midshires Care Ltd",
+  "careHome": "N",
+  "constituency": "Blackpool South",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2022-05-20",
+          "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2022-05-20",
+          "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2022-05-20",
+          "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2022-05-20",
+          "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2022-05-20",
+          "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2022-05-20",
+      "reportLinkId": "b62fd95f-9832-41cf-a72b-413dfd224473"
+    },
+    "reportDate": "2022-05-20"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Domiciliary care service",
+      "name": "Homecare agencies"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2022-04-27"
+  },
+  "lastReport": {
+    "publicationDate": "2022-05-20"
+  },
+  "localAuthority": "Blackpool",
+  "locationId": "1-10204941951",
+  "locationTypes": [],
+  "mainPhoneNumber": "01253202949",
+  "name": "Helping Hands Blackpool",
+  "numberOfBeds": 0,
+  "odsCode": "VNHWM",
+  "onspdCcgCode": "E38000015",
+  "onspdCcgName": "NHS Blackpool CCG",
+  "onspdIcbCode": "E54000048",
+  "onspdIcbName": "NHS Lancashire and South Cumbria Integrated Care Board",
+  "onspdLatitude": 53.7760448,
+  "onspdLongitude": -3.0258939,
+  "organisationType": "Location",
+  "postalAddressLine1": "Office 11",
+  "postalAddressLine2": "Blackpool Business Park, Amy Johnson Way",
+  "postalAddressTownCity": "Blackpool",
+  "postalCode": "FY4 2RF",
+  "providerId": "1-101671690",
+  "region": "North West",
+  "registrationDate": "2021-03-23",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    },
+    {
+      "code": "RA5",
+      "name": "Treatment of disease, disorder or injury"
+    }
+  ],
+  "relationships": [],
+  "reports": [
+    {
+      "firstVisitDate": "2022-04-27",
+      "linkId": "b62fd95f-9832-41cf-a72b-413dfd224473",
+      "reportDate": "2022-05-20",
+      "reportType": "Location",
+      "reportUri": "/reports/b62fd95f-9832-41cf-a72b-413dfd224473?20220520120000"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Physical disabilities"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "10070843671",
+  "website": "www.helpinghandshomecare.co.uk"
+}

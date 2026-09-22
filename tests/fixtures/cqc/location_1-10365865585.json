@@ -1,0 +1,180 @@
+{
+  "careHome": "N",
+  "constituency": "Leeds East",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2023-01-26",
+          "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2023-01-26",
+          "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2023-01-26",
+          "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2023-01-26",
+          "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2023-01-26",
+          "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2023-01-26",
+      "reportLinkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af"
+    },
+    "reportDate": "2023-01-26"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Domiciliary care service",
+      "name": "Homecare agencies"
+    },
+    {
+      "description": "Supported living service",
+      "name": "Supported living"
+    }
+  ],
+  "historicRatings": [
+    {
+      "organisationId": "1-4162984891",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Good"
+      },
+      "reportDate": "2018-09-11",
+      "reportLinkId": "bac02f9f-ff74-4686-a7db-63891cd096b0"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2022-11-20"
+  },
+  "lastReport": {
+    "publicationDate": "2023-01-26"
+  },
+  "localAuthority": "Leeds",
+  "locationId": "1-10365865585",
+  "locationTypes": [],
+  "mainPhoneNumber": "07515726408",
+  "name": "Arch Community Services Ltd",
+  "numberOfBeds": 0,
+  "odsCode": "VNHR9",
+  "onspdCcgCode": "E38000225",
+  "onspdCcgName": "NHS Leeds CCG",
+  "onspdIcbCode": "E54000054",
+  "onspdIcbName": "NHS West Yorkshire Integrated Care Board",
+  "onspdLatitude": 53.8018498,
+  "onspdLongitude": -1.4930181,
+  "organisationType": "Location",
+  "postalAddressLine1": "595 York Road",
+  "postalAddressTownCity": "Leeds",
+  "postalCode": "LS9 6NW",
+  "providerId": "1-4058249899",
+  "region": "Yorkshire & Humberside",
+  "registrationDate": "2021-02-15",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [
+    {
+      "reason": "Location Move",
+      "relatedLocationId": "1-4162984891",
+      "relatedLocationName": "Arch Healthcare Ltd",
+      "type": "HSCA Predecessor"
+    }
+  ],
+  "reports": [
+    {
+      "firstVisitDate": "2022-11-20",
+      "linkId": "bea26e2c-0ec1-4a32-ab35-4768a73ba2af",
+      "reportDate": "2023-01-26",
+      "reportType": "Location",
+      "reportUri": "/reports/bea26e2c-0ec1-4a32-ab35-4768a73ba2af?20230126130000"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Caring for children"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Eating disorders"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    },
+    {
+      "name": "Substance misuse problems"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "72240927"
+}

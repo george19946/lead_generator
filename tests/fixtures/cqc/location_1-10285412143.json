@@ -1,0 +1,129 @@
+{
+  "careHome": "N",
+  "constituency": "Bridgwater",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2022-05-19",
+          "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2022-05-19",
+          "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2022-05-19",
+          "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2022-05-19",
+          "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2022-05-19",
+          "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2022-05-19",
+      "reportLinkId": "51fbb23e-69e3-4ee6-9685-007609b9a193"
+    },
+    "reportDate": "2022-05-19"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Domiciliary care service",
+      "name": "Homecare agencies"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2022-05-03"
+  },
+  "lastReport": {
+    "publicationDate": "2022-05-19"
+  },
+  "localAuthority": "Somerset",
+  "locationId": "1-10285412143",
+  "locationTypes": [],
+  "mainPhoneNumber": "01278238400",
+  "name": "Caringhearts Support Services Ltd",
+  "numberOfBeds": 0,
+  "odsCode": "VNHPJ",
+  "onspdCcgCode": "E38000150",
+  "onspdCcgName": "NHS Somerset CCG",
+  "onspdIcbCode": "E54000038",
+  "onspdIcbName": "NHS Somerset Integrated Care Board",
+  "onspdLatitude": 51.0887302,
+  "onspdLongitude": -2.906969,
+  "organisationType": "Location",
+  "postalAddressLine1": "Unit 3, Thorngrove Barns",
+  "postalAddressLine2": "Main Road, Middlezoy",
+  "postalAddressTownCity": "Bridgwater",
+  "postalCode": "TA7 0PD",
+  "providerId": "1-9126760778",
+  "region": "South West",
+  "registrationDate": "2021-01-28",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [],
+  "reports": [
+    {
+      "firstVisitDate": "2022-04-14",
+      "linkId": "51fbb23e-69e3-4ee6-9685-007609b9a193",
+      "reportDate": "2022-05-19",
+      "reportType": "Location",
+      "reportUri": "/reports/51fbb23e-69e3-4ee6-9685-007609b9a193?20231001120000"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "10023415117"
+}

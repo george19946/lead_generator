@@ -1,0 +1,47 @@
+{
+  "companiesHouseNumber": "08619175",
+  "constituency": "Leeds West and Pudsey",
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastInspection": {
+    "date": "2022-11-20"
+  },
+  "localAuthority": "Leeds",
+  "locationIds": [
+    "1-10365865585",
+    "1-4162984891"
+  ],
+  "mainPhoneNumber": "07515726408",
+  "name": "Arch Community Services Ltd",
+  "odsCode": "AWYX",
+  "onspdIcbCode": "E54000054",
+  "onspdIcbName": "NHS West Yorkshire Integrated Care Board",
+  "onspdLatitude": 53.7972064,
+  "onspdLongitude": -1.5910824,
+  "organisationType": "Provider",
+  "ownershipType": "Organisation",
+  "postalAddressLine1": "2 Gelder Road",
+  "postalAddressTownCity": "Leeds",
+  "postalCode": "LS12 3UF",
+  "providerId": "1-4058249899",
+  "region": "Yorkshire & Humberside",
+  "registrationDate": "2017-08-15",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [],
+  "type": "Social Care Org",
+  "uprn": "72076603",
+  "website": "www.archcommunity.co.uk"
+}

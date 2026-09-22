@@ -1,0 +1,38 @@
+{
+  "firstPageUri": "/locations?page=1&perPage=5&inspectionDirectorate=Adult+social+care",
+  "lastPageUri": "/locations?page=11582&perPage=5&inspectionDirectorate=Adult+social+care",
+  "locations": [
+    {
+      "locationId": "1-10000302982",
+      "locationName": "Henley House",
+      "postalCode": "IP1 6TB"
+    },
+    {
+      "locationId": "1-10000792582",
+      "locationName": "Orchids Care",
+      "postalCode": "DN4 9LX"
+    },
+    {
+      "locationId": "1-10000812939",
+      "locationName": "Charlotte House",
+      "postalCode": "CH63 3DZ"
+    },
+    {
+      "locationId": "1-10000813008",
+      "locationName": "Regency Care Centre",
+      "postalCode": "M45 7SG"
+    },
+    {
+      "locationId": "1-10001702698",
+      "locationName": "Custom Care (North Staffs)",
+      "postalCode": "ST3 5XA"
+    }
+  ],
+  "nextPageUri": "/locations?page=2&perPage=5&inspectionDirectorate=Adult+social+care",
+  "page": 1,
+  "perPage": 5,
+  "previousPageUri": null,
+  "total": 57909,
+  "totalPages": 11582,
+  "uri": "/locations"
+}

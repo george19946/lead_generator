@@ -1,0 +1,160 @@
+{
+  "brandId": "BD393",
+  "brandName": "BRAND Right at Home",
+  "careHome": "N",
+  "constituency": "West Worcestershire",
+  "currentRatings": {
+    "overall": {
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "organisationId": "1-2718185457",
+          "rating": "Good",
+          "reportDate": "2019-12-19",
+          "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+        },
+        {
+          "name": "Well-led",
+          "organisationId": "1-2718185457",
+          "rating": "Good",
+          "reportDate": "2019-12-19",
+          "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+        },
+        {
+          "name": "Caring",
+          "organisationId": "1-2718185457",
+          "rating": "Good",
+          "reportDate": "2019-12-19",
+          "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+        },
+        {
+          "name": "Responsive",
+          "organisationId": "1-2718185457",
+          "rating": "Good",
+          "reportDate": "2019-12-19",
+          "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+        },
+        {
+          "name": "Effective",
+          "organisationId": "1-2718185457",
+          "rating": "Good",
+          "reportDate": "2019-12-19",
+          "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+        }
+      ],
+      "rating": "Good",
+      "reportDate": "2019-12-19",
+      "reportLinkId": "c5c3a922-a2d4-4a24-8cee-b50316d0d4ef"
+    },
+    "reportDate": "2019-12-19"
+  },
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Domiciliary care service",
+      "name": "Homecare agencies"
+    }
+  ],
+  "historicRatings": [
+    {
+      "organisationId": "1-2718185457",
+      "overall": {
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ],
+        "rating": "Good"
+      },
+      "reportDate": "2017-03-28",
+      "reportLinkId": "78053edd-2860-4dc8-9973-9a8d5ec80cb0"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "name": "Community based adult social care services",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Adult social care",
+  "lastReport": {
+    "publicationDate": "2019-12-19"
+  },
+  "localAuthority": "Worcestershire",
+  "locationId": "1-10324127390",
+  "locationTypes": [],
+  "mainPhoneNumber": "01684568001",
+  "name": "Acer Care and Care 4 Me",
+  "numberOfBeds": 0,
+  "odsCode": "VNHQ6",
+  "onspdCcgCode": "E38000236",
+  "onspdCcgName": "NHS Herefordshire and Worcestershire CCG",
+  "onspdIcbCode": "E54000019",
+  "onspdIcbName": "NHS Herefordshire and Worcestershire Integrated Care Board",
+  "onspdLatitude": 52.0883993,
+  "onspdLongitude": -2.2732963,
+  "organisationType": "Location",
+  "postalAddressLine1": "Unit 6, Cygnet Business Centre",
+  "postalAddressLine2": "Worcester Road",
+  "postalAddressTownCity": "Worcester",
+  "postalCode": "WR8 0EA",
+  "providerId": "1-420633328",
+  "region": "West Midlands",
+  "registrationDate": "2021-03-01",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA1",
+      "name": "Personal care"
+    }
+  ],
+  "relationships": [
+    {
+      "reason": "New Provider",
+      "relatedLocationId": "1-2718185457",
+      "relatedLocationName": "Care 4 Me Limited",
+      "type": "HSCA Predecessor"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "type": "Social Care Org",
+  "uprn": "10024317848"
+}

@@ -1,0 +1,64 @@
+{
+  "careHome": "N",
+  "constituency": "York Central",
+  "dormancy": "N",
+  "gacServiceTypes": [
+    {
+      "description": "Dental service",
+      "name": "Dentist"
+    }
+  ],
+  "inspectionAreas": [],
+  "inspectionCategories": [
+    {
+      "code": "P1",
+      "name": "Dentists",
+      "primary": "true"
+    }
+  ],
+  "inspectionDirectorate": "Primary medical services",
+  "localAuthority": "York",
+  "locationId": "1-10223702130",
+  "locationTypes": [],
+  "mainPhoneNumber": "01904653284",
+  "name": "Castlegate Dental Centre",
+  "numberOfBeds": 0,
+  "odsCode": "V83109",
+  "onspdCcgCode": "E38000188",
+  "onspdCcgName": "NHS Vale of York CCG",
+  "onspdIcbCode": "E54000051",
+  "onspdIcbName": "NHS Humber and North Yorkshire Integrated Care Board",
+  "onspdLatitude": 53.957294,
+  "onspdLongitude": -1.08073,
+  "organisationType": "Location",
+  "postalAddressCounty": "North Yorkshire",
+  "postalAddressLine1": "1 Castlegate",
+  "postalAddressTownCity": "York",
+  "postalCode": "YO1 9RN",
+  "providerId": "1-9805952171",
+  "region": "Yorkshire & Humberside",
+  "registrationDate": "2021-03-11",
+  "registrationStatus": "Registered",
+  "regulatedActivities": [
+    {
+      "code": "RA5",
+      "name": "Treatment of disease, disorder or injury"
+    },
+    {
+      "code": "RA7",
+      "name": "Surgical procedures"
+    },
+    {
+      "code": "RA8",
+      "name": "Diagnostic and screening procedures"
+    }
+  ],
+  "relationships": [],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "type": "Primary Dental Care",
+  "uprn": "100052146877"
+}

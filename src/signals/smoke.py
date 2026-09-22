@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from signals.http import ApiError
 from signals.sources.companies_house.client import CompaniesHouseClient
 from signals.sources.companies_house.models import ChCompany
 from signals.sources.cqc.client import CqcClient
@@ -23,17 +24,23 @@ from signals.verticals.care import CARE_SIC_CODES
 EXPECTED_FIELDS = {
     "location": [
         "locationId", "providerId", "name", "registrationStatus", "registrationDate",
-        "postalCode", "region", "localAuthority", "mainPhoneNumber", "inspectionDirectorate",
-        "gacServiceTypes", "regulatedActivities", "website",
+        "postalCode", "region", "localAuthority", "inspectionDirectorate",
+        "gacServiceTypes", "regulatedActivities",
     ],
     "provider": [
         "providerId", "name", "registrationStatus", "registrationDate", "postalCode",
-        "ownershipType", "companiesHouseNumber", "website", "mainPhoneNumber", "locationIds",
+        "ownershipType", "locationIds",
     ],
     "company": [
         "company_number", "company_name", "company_status", "company_type", "date_of_creation",
         "registered_office_address", "sic_codes",
     ],
+}
+
+# Fields CQC omits entirely when empty (observed live): counted, not reported as problems.
+OPTIONAL_FIELDS = {
+    "location": ["website", "mainPhoneNumber", "currentRatings", "assessment"],
+    "provider": ["website", "mainPhoneNumber", "companiesHouseNumber", "charityNumber"],
 }
 
 
@@ -149,23 +156,36 @@ def run_smoke(
 
     # --- Companies House -----------------------------------------------------------
     today = now.date()
-    search, secs = _timed(
-        lambda: ch.advanced_search(
-            sic_codes=CARE_SIC_CODES,
-            incorporated_from=today - timedelta(days=7),
-            incorporated_to=today,
-            size=n,
+    search: dict = {}
+    try:
+        search, secs = _timed(
+            lambda: ch.advanced_search(
+                sic_codes=CARE_SIC_CODES,
+                incorporated_from=today - timedelta(days=7),
+                incorporated_to=today,
+                size=n,
+            )
         )
-    )
-    items = search.get("items") or []
-    report.add(f"Companies House advanced search (7 days): keys={sorted(search)} hits={search.get('hits')} ({secs:.2f}s)")
-    for item in items:
+    except ApiError as exc:
+        report.problem(f"Companies House: {exc}")
+    else:
+        report.add(
+            f"Companies House advanced search (7 days): keys={sorted(search)} hits={search.get('hits')} ({secs:.2f}s)"
+        )
+    for item in search.get("items") or []:
         _check_fields("company", item, report)
         _parse(ChCompany, item, report)
         report.add(
             f"  company {item.get('company_number')} | {item.get('company_name')} | {item.get('company_type')} | "
             f"{item.get('date_of_creation')} | {(item.get('registered_office_address') or {}).get('postal_code')} | {item.get('sic_codes')}"
         )
+
+    for kind, records in (("location", locations), ("provider", providers)):
+        if records:
+            present = ", ".join(
+                f"{f} {sum(1 for r in records if r.get(f))}/{len(records)}" for f in OPTIONAL_FIELDS[kind]
+            )
+            report.add(f"Optional {kind} fields present: {present}")
 
     report.add(f"Requests made: CQC={cqc.request_count}, Companies House={ch.request_count}")
 
@@ -176,7 +196,8 @@ def run_smoke(
             _save(fixtures_dir / "cqc" / f"location_{loc['locationId']}.json", loc)
         for prov in providers:
             _save(fixtures_dir / "cqc" / f"provider_{prov['providerId']}.json", _redact_individual(prov))
-        _save(fixtures_dir / "companies_house" / "advanced_search.json", search)
+        if search:
+            _save(fixtures_dir / "companies_house" / "advanced_search.json", search)
         report.add(f"Saved sanitised fixtures under {fixtures_dir}/ (captured {date.today().isoformat()})")
 
     return report
