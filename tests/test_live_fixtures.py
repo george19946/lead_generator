@@ -5,10 +5,12 @@ from pathlib import Path
 
 import pytest
 
+from signals.sources.companies_house.models import ChCompany
 from signals.sources.cqc.models import CqcLocation, CqcProvider
 from signals.sources.cqc.sanitise import PERSON_KEYS
 
 CQC_DIR = Path(__file__).parent / "fixtures" / "cqc"
+CH_DIR = Path(__file__).parent / "fixtures" / "companies_house"
 LOCATIONS = sorted(CQC_DIR.glob("location_*.json"))
 PROVIDERS = sorted(CQC_DIR.glob("provider_*.json"))
 
@@ -54,3 +56,13 @@ def test_deregistered_location_is_recognisable():
     locs = [CqcLocation.model_validate(json.loads(p.read_text())) for p in LOCATIONS]
     dereg = [loc for loc in locs if loc.registration_status == "Deregistered"]
     assert dereg and all(loc.deregistration_date for loc in dereg)
+
+
+def test_live_companies_house_search_parses():
+    page = json.loads((CH_DIR / "advanced_search.json").read_text())
+    assert page["hits"] >= len(page["items"]) > 0
+    for item in page["items"]:
+        company = ChCompany.model_validate(item)
+        assert company.company_number and company.company_name and company.date_of_creation
+        assert company.sic_codes and company.registered_office_address.postal_code
+        assert company.company_type in {"ltd", "private-limited-guarant-nsc", "private-limited-guarant-nsc-limited-exemption", "llp"}

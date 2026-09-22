@@ -1,0 +1,130 @@
+{
+  "etag": "f6f5b31d94459bf41456450d9293163aff079749",
+  "hits": 180,
+  "items": [
+    {
+      "company_name": "ZURI CARE LTD",
+      "company_number": "17459808",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-15",
+      "kind": "search-results#company",
+      "links": {
+        "company_profile": "/company/17459808"
+      },
+      "registered_office_address": {
+        "address_line_1": "24 Longfield Crescent",
+        "country": "England",
+        "locality": "Tadworth",
+        "postal_code": "KT20 5JJ"
+      },
+      "sic_codes": [
+        "87300"
+      ]
+    },
+    {
+      "company_name": "MASTERING SOCIAL WORK LIMITED",
+      "company_number": "17461680",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-16",
+      "kind": "search-results#company",
+      "links": {
+        "company_profile": "/company/17461680"
+      },
+      "registered_office_address": {
+        "address_line_1": "23 Ploughed Way",
+        "address_line_2": "Kibworth Harcourt",
+        "country": "England",
+        "locality": "Leicester",
+        "postal_code": "LE8 0WH"
+      },
+      "sic_codes": [
+        "88100"
+      ]
+    },
+    {
+      "company_name": "WILLOWBRIDGE HEALTH AND CARE LTD",
+      "company_number": "17462408",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-16",
+      "kind": "search-results#company",
+      "links": {
+        "company_profile": "/company/17462408"
+      },
+      "registered_office_address": {
+        "address_line_1": "19 Leases Road",
+        "address_line_2": "Leeming Bar",
+        "country": "England",
+        "locality": "Northallerton",
+        "postal_code": "DL7 9DB"
+      },
+      "sic_codes": [
+        "78200",
+        "88100"
+      ]
+    },
+    {
+      "company_name": "CLOSHA CARE GROUP LTD",
+      "company_number": "17460265",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-15",
+      "kind": "search-results#company",
+      "links": {
+        "company_profile": "/company/17460265"
+      },
+      "registered_office_address": {
+        "address_line_1": "36 Thompson House Bridlington Road",
+        "country": "England",
+        "locality": "Watford",
+        "postal_code": "WD19 7FG"
+      },
+      "sic_codes": [
+        "87300"
+      ]
+    },
+    {
+      "company_name": "VERITY CARE GROUP LTD",
+      "company_number": "17460497",
+      "company_status": "active",
+      "company_type": "ltd",
+      "date_of_creation": "2026-09-15",
+      "kind": "search-results#company",
+      "links": {
+        "company_profile": "/company/17460497"
+      },
+      "registered_office_address": {
+        "address_line_1": "Flat 6 73 Warren Road",
+        "country": "England",
+        "locality": "London",
+        "postal_code": "E4 6QR"
+      },
+      "sic_codes": [
+        "87300"
+      ]
+    }
+  ],
+  "kind": "search#advanced-search",
+  "top_hit": {
+    "company_name": "ZURI CARE LTD",
+    "company_number": "17459808",
+    "company_status": "active",
+    "company_type": "ltd",
+    "date_of_creation": "2026-09-15",
+    "kind": "search-results#company",
+    "links": {
+      "company_profile": "/company/17459808"
+    },
+    "registered_office_address": {
+      "address_line_1": "24 Longfield Crescent",
+      "country": "England",
+      "locality": "Tadworth",
+      "postal_code": "KT20 5JJ"
+    },
+    "sic_codes": [
+      "87300"
+    ]
+  }
+}

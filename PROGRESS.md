@@ -1,6 +1,6 @@
 # Progress
 
-## Milestone 1: scaffold, config, API clients (CQC verified live; Companies House waiting on a valid key)
+## Milestone 1: scaffold, config, API clients (done: both APIs verified live)
 
 ### Done
 - uv project (Python 3.12). Dependencies: httpx, pydantic, pydantic-settings, pyyaml, typer, jinja2; pytest for dev.
@@ -34,6 +34,19 @@
   pasted twice. The user needs to create a Companies House REST key (Live environment) and set it.
 - The smoke test now reports each API's failure separately. Empty optional fields are counted rather than flagged.
 
+### Session 4 (2026-09-22): both APIs live
+- The keys now come from environment variables (there is no `.env` in this container), and they are two different keys.
+- **Companies House: working.** A 7-day care-SIC search returned 180 hits in 0.83 s. The sanitised fixture
+  `tests/fixtures/companies_house/advanced_search.json` holds 5 items: company data only, with no officer names.
+  A new test parses it. The CQC fixtures were re-captured unchanged, apart from timestamps, which were reverted.
+- **`company_type` values, confirmed live.** 90 days of care-SIC incorporations: 1,876 companies, all `active`.
+  - `ltd`: 1,724
+  - `private-limited-guarant-nsc`: 147
+  - `private-limited-guarant-nsc-limited-exemption`: 5
+  - No `llp` appeared, but the synthetic fixture still covers it.
+  - All three types are corporate subscribers for PECR.
+- Companies House volume: 7 days ≈ 180 companies; 90 days took 15 calls with weekly slicing, well under a minute.
+
 ### Live measurements (2026-09-22)
 - CQC latency is about 0.17 s per request, sequential. A burst of 40 requests at 10 concurrent (about 12 req/s) got no 429s.
   CQC sends no rate-limit headers. The default of 10 req/s stays.
@@ -47,10 +60,8 @@
   - A weekly run ≈ 1,250 CQC detail calls (≈ 4 min) + 1–2 Companies House calls.
   - To be firmed up in M2.
 
-### Blocked / next
-- **Companies House key.** Once it's valid, re-run `uv run signals smoke --n 5 --save-fixtures` to capture the
-  Companies House fixture, and confirm the `company_type` values.
-- Then milestone 2: SQLite schema, snapshot storage, `init`, `backfill` (with the call estimate shown to the user first).
+### Next
+- Milestone 2: SQLite schema, snapshot storage, `init`, `backfill` (with the call estimate shown to the user first).
 
 ### API facts: confirmed vs the brief (official docs, 2026-09-22)
 1. ✅ CQC base `https://api.service.cqc.org.uk/public/v1` (alternative server: `api-management.service.cqc.org.uk`).
@@ -76,13 +87,14 @@
    empty, not set to null. Website coverage was low in the sample (locations 4/10, providers 4/5).
    None of the 10 sampled locations used the `assessment` block.
 10. ⚠️ All 5 sampled providers had `companiesHouseNumber`, so exact CH↔CQC matching should cover many providers.
-11. Still to confirm: the Companies House `company_type` values (needs a valid key).
+11. ✅ Live: Companies House `company_type` values for care SIC codes are `ltd`, `private-limited-guarant-nsc`
+    and `private-limited-guarant-nsc-limited-exemption`. Search items have no officer or person fields.
 
 ### Open questions
 - None blocking. The CQC rate limit is undocumented, so the default is 10 req/s until measured.
 
 ## Milestones
-1. Scaffold + clients + smoke test: code done, live run waiting on keys
+1. Scaffold + clients + smoke test: done (both APIs verified live)
 2. SQLite schema, snapshots, backfill: not started
 3. Feeds + CH↔CQC matching + tests: not started
 4. CSV/HTML output, region filtering, `sample`: not started
