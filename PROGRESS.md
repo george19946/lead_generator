@@ -60,9 +60,33 @@
 - Observation: care SIC codes also catch children's services (Ofsted-regulated, not CQC) and recruitment firms,
   e.g. "OPEN ARMS CHILDRENS SERVICES LTD", "LICHT RECRUITMENT SERVICES LIMITED". Could be flagged by name in M4 if wanted.
 
+### Real-data run (user's Mac, 2026-09-23: London + east-london, `run --weeks 4`)
+- Sync after the backfill: nothing had changed yet (0 CQC changes, 169 Companies House records unchanged).
+- Leads per week:
+
+  | Week ending | New companies | New never inspected | New poor ratings |
+  |---|---|---|---|
+  | 30 Aug | 76 | 11 | 6 |
+  | 6 Sep | 33 | 3 | 2 |
+  | 13 Sep | 22 | 1 | 2 |
+  | 20 Sep | 30 | 4 | 2 |
+
+  The first week is larger because the 14-day grace window pulls in 10–23 Aug on a first run.
+  Steady state is about 20–35 new companies, 1–4 never inspected and about 2 poor ratings a week.
+- Currently qualifying: 1,118 never inspected (the full list, for `never_inspected_all.csv`), and 334 rated Requires improvement or Inadequate.
+- Region tags look right, e.g. RM16 (Grays, Thurrock) is east-london only, and E6 is both.
+- Noise seen in new_companies: children's homes (Ofsted, not CQC), e.g. "DIAMOND CUT CHILDRENS CARE HOME LTD",
+  and recruitment firms, e.g. "KEMY SOLUTIONS RECRUITMENT LTD". Candidates for a name flag in M4.
+- "Inspected but not rated" appears as a previous rating; M4 should word it more clearly.
+- **Decision (user):** formation-agent / shared registered-office companies stay out of regional leads.
+  I've proposed options for using them anyway, and am waiting on the user's choice:
+  - (a) a separate national "location unknown" list;
+  - (b) watch them: re-check the registered office (one Companies House call per company) and look for a CQC
+    registration under the company number. When either gives a real address, it becomes a regional lead.
+  - Not recommended: using director or PSC addresses, which is personal data.
+
 ### Next
-- User runs `uv run signals run --weeks 4` on the real DB and reports back.
-- Then milestone 4: CSV and HTML digest per region, `never_inspected_all.csv`, `sample`.
+- Milestone 4: CSV and HTML digest per region, `never_inspected_all.csv`, `sample`, plus the user's choice above.
 
 ## Milestone 2: SQLite store, snapshots, backfill and sync (done)
 
