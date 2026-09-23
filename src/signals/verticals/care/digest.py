@@ -6,6 +6,7 @@ outputs/care/<week_ending>/<region>/
     never_inspected.csv      newly registered locations with no inspection yet
     new_companies.csv        new care companies placed in the region
     location_unknown.csv     new care companies at formation-agent addresses (national)
+    company_located.csv      formation-agent companies that have now revealed a location in the region
     never_inspected_all.csv  every never-inspected location in the region, as the database stands now
 
 Everything except never_inspected_all.csv comes from the recorded lead events, so re-running a week
@@ -102,6 +103,22 @@ UNKNOWN_COLUMNS = [
     Column("suggested_channel", "Contact rule"),
     Column("companies_house_url", "Companies House"),
     Column("company_number", "Company number"),
+]
+
+LOCATED_COLUMNS = [
+    Column("company_name", "Company"),
+    Column("located_by", "How located"),
+    Column("located_date", "Located on"),
+    Column("previous_postcode", "Previous (formation agent) postcode"),
+    Column("address", "Registered office"),
+    Column("postcode", "Postcode"),
+    Column("inferred_local_authority", "Local authority"),
+    Column("cqc_provider_name", "CQC provider"),
+    Column("cqc_provider_address", "CQC provider address"),
+    Column("cqc_provider_postcode", "CQC provider postcode"),
+    *[c for c in COMPANY_COLUMNS if c.key in (
+        "incorporated", "flag", "sic_description", "legal_form", "suggested_channel", "companies_house_url",
+        "company_number", "regions")],
 ]
 
 NOTES = [
@@ -268,6 +285,28 @@ def location_unknown_section(rows: list[dict]) -> Section:
     )
 
 
+def company_located_section(rows: list[dict]) -> Section:
+    rows = _sort_by_date(rows, "located_date", "company_name", flagged_last=True)
+    html = []
+    for r in rows:
+        by_cqc = r.get("located_by") == "registered with CQC"
+        html.append([
+            _company_cell(r),
+            Cell(badge=r.get("located_by"), tone="good" if by_cqc else "info", sub=r.get("located_date")),
+            Cell(r.get("inferred_local_authority"),
+                 sub=(r.get("cqc_provider_address") if by_cqc else r.get("address")) or r.get("postcode")),
+            Cell(r.get("previous_postcode"), sub="formation-agent address"),
+            Cell(r.get("incorporated"), sub=r.get("sic_description")),
+        ])
+    return Section(
+        key="company_located", title="Now located in your region",
+        intro="New care companies that were registered at a formation agent (location unknown) and have now "
+              "revealed where they operate: they moved their registered office here, or registered with CQC here.",
+        columns=LOCATED_COLUMNS, rows=rows, csv_name="company_located.csv",
+        html_headers=["Company", "How located", "Now", "Previously", "Incorporated"], html_rows=html,
+    )
+
+
 @dataclass
 class RegionLeads:
     region: str
@@ -275,6 +314,7 @@ class RegionLeads:
     never_inspected: list[dict]
     new_companies: list[dict]
     location_unknown: list[dict]
+    company_located: list[dict]
     never_inspected_all: list[dict]
 
 
@@ -282,7 +322,8 @@ def select_region(
     leads: Iterable[LeadRow | Lead], region: str, *, include_location_unknown: bool = True
 ) -> dict[str, list[dict]]:
     """This region's rows per feed. Location-unknown leads are national, so they go to every region."""
-    out: dict[str, list[dict]] = {"poor_ratings": [], "never_inspected": [], "new_companies": [], "location_unknown": []}
+    feeds = ("poor_ratings", "never_inspected", "new_companies", "location_unknown", "company_located")
+    out: dict[str, list[dict]] = {feed: [] for feed in feeds}
     for lead in leads:
         if lead.feed not in out:
             continue
@@ -310,6 +351,7 @@ def build_digest(leads: RegionLeads, *, heading: str, subtitle: str, week_ending
         poor_ratings_section(leads.poor_ratings),
         never_inspected_section(leads.never_inspected, week_ending),
         new_companies_section(leads.new_companies),
+        company_located_section(leads.company_located),
         location_unknown_section(leads.location_unknown),
     ]
     count = {s.key: len(s.rows) for s in sections}
@@ -317,6 +359,7 @@ def build_digest(leads: RegionLeads, *, heading: str, subtitle: str, week_ending
         Tile("New poor ratings", count["poor_ratings"], "Requires improvement or Inadequate"),
         Tile("Newly registered", count["never_inspected"], "not yet inspected"),
         Tile("New care companies", count["new_companies"], "in this region"),
+        Tile("Now located", count["company_located"], "formation-agent companies found here"),
         Tile("Location unknown", count["location_unknown"], "new companies, national"),
         Tile("Never inspected", f"{len(leads.never_inspected_all):,}", "all in region, see never_inspected_all.csv"),
     ]
@@ -324,6 +367,7 @@ def build_digest(leads: RegionLeads, *, heading: str, subtitle: str, week_ending
         ("poor_ratings.csv", "new poor ratings"),
         ("never_inspected.csv", "newly registered, not yet inspected"),
         ("new_companies.csv", "new care companies in the region"),
+        ("company_located.csv", "formation-agent companies now located in the region"),
         ("location_unknown.csv", "new care companies at formation-agent addresses (national)"),
         ("never_inspected_all.csv", "every never-inspected location in the region, from the latest data"),
     ]

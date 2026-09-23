@@ -68,6 +68,10 @@ class CompaniesHouseClient:
         # Advanced search answers 404 when nothing matches.
         return self.api.get_json("advanced-search/companies", params, not_found_ok=True) or {}
 
+    def get_company(self, company_number: str) -> dict | None:
+        """The company profile (current registered office, status...), or None if not found."""
+        return self.api.get_json(f"company/{company_number}", not_found_ok=True)
+
     def iter_incorporations(
         self,
         sic_codes: Sequence[str],

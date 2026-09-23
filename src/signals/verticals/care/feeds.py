@@ -9,6 +9,7 @@
   Trigger: the rating and its publication date, so a re-rating is a new lead.
 - location_unknown: new care companies registered at a formation agent (shared registered office), so they
   can't be placed in a region; listed nationally.
+- company_located: those formation-agent companies once they reveal a real location (see CompanyLocatedFeed).
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ from signals.sources.cqc.models import CqcLocation, CqcProvider, EffectiveRating
 from signals.verticals.care.collect import ASC_DIRECTORATE, CareScope
 from signals.verticals.care.flags import name_flag, sic_labels
 from signals.verticals.care.linking import CqcLinker
+from signals.verticals.care.watch import is_shared, office_postcode, postcode_counts, postcode_key
 
 log = logging.getLogger(__name__)
 
@@ -41,10 +43,6 @@ POOR_RATINGS = ("Requires improvement", "Inadequate")
 RATING_RANK = {"Outstanding": 4, "Good": 3, "Requires improvement": 2, "Inadequate": 1}
 ALL_ENGLAND = "england"
 NATIONAL = "national"  # pseudo-region for leads that can't be placed (location_unknown)
-# A registered office shared by this many stored care companies is treated as a formation agent or virtual
-# office (live data: 13% of new care companies use one). Its postcode says nothing about where the business
-# operates, so no customer region is inferred from it.
-SHARED_ADDRESS_MIN = 5
 CH_PROFILE = "https://find-and-update.company-information.service.gov.uk/company/"
 
 
@@ -108,6 +106,14 @@ class CareData:
     def company_leads(self) -> list[tuple[bool, Lead]]:
         return build_company_leads(self)
 
+    @cached_property
+    def postcode_counts(self) -> Counter[str]:
+        return postcode_counts(
+            {"registered_office_address": c.registered_office_address.model_dump()}
+            for c in self.companies
+            if c.registered_office_address
+        )
+
     def regions(self, *, region: str | None, local_authority: str | None, postcode: str | None) -> tuple[str, ...]:
         if self.scope.all_england:
             return (ALL_ENGLAND,)
@@ -159,10 +165,6 @@ def _location_regions(data: CareData, loc: CqcLocation) -> tuple[str, ...]:
     return data.regions(region=loc.region, local_authority=loc.local_authority, postcode=loc.postal_code)
 
 
-def _postcode_key(postcode: str | None) -> str:
-    return "".join((postcode or "").upper().split())
-
-
 class NewCompaniesFeed:
     """New care companies whose registered office places them in a customer region."""
 
@@ -196,16 +198,11 @@ class LocationUnknownFeed:
 def build_company_leads(data: CareData) -> list[tuple[bool, Lead]]:
     """A lead per stored company, with whether its registered office is shared (formation agent)."""
     out = []
-    sharing = Counter(
-        _postcode_key(c.registered_office_address.postal_code)
-        for c in data.companies
-        if c.registered_office_address and c.registered_office_address.postal_code
-    )
     for company in data.companies:
         office = company.registered_office_address
         postcode = office.postal_code if office else None
-        shared_by = sharing.get(_postcode_key(postcode), 0) if postcode else 0
-        shared = shared_by >= SHARED_ADDRESS_MIN
+        shared_by = data.postcode_counts.get(postcode_key(postcode), 0) if postcode else 0
+        shared = is_shared(postcode, data.postcode_counts)
         region, local_authority = (None, None) if shared else data.postcodes.lookup(postcode)
         regions = () if shared else data.regions(region=region, local_authority=local_authority, postcode=postcode)
         link = data.linker.link(company)
@@ -244,6 +241,67 @@ def build_company_leads(data: CareData) -> list[tuple[bool, Lead]]:
         )
         out.append((shared, lead))
     return out
+
+
+class CompanyLocatedFeed:
+    """Formation-agent companies that have since revealed where they operate.
+
+    - "moved": the registered office moved from a shared (formation-agent) postcode to one that places the
+      company in a customer region. Found by the weekly re-checks (watch.py); dated when we saw the move.
+    - "registered with CQC": a company still at a formation agent now appears as a CQC provider (matched
+      by company number) in a customer region. Dated by the provider's CQC registration.
+    """
+
+    name = "company_located"
+
+    def __init__(self, data: CareData):
+        self.data = data
+
+    def leads(self) -> list[Lead]:
+        store, counts = self.data.store, self.data.postcode_counts
+        moved_ids = store.ids_with_history("companies_house", "company")
+        out = []
+        for shared, base in self.data.company_leads:
+            number = base.data["company_number"]
+            if not shared and number in moved_ids:
+                move = self._move(number, counts)
+                if move and base.regions:
+                    previous, when = move
+                    out.append(replace(
+                        base, feed=self.name, trigger_key=f"moved:{postcode_key(base.data['postcode'])}",
+                        event_date=when,
+                        data={**base.data, "located_by": "moved registered office", "located_date": when.isoformat(),
+                              "previous_postcode": previous},
+                    ))
+            if shared and base.data["cqc_registered"] == "yes":
+                provider = self.data.providers.get(base.data["cqc_provider_id"])
+                regions = self.data.regions(region=provider.region, local_authority=provider.local_authority,
+                                            postcode=provider.postal_code) if provider else ()
+                if regions:
+                    registered = provider.registration_date
+                    out.append(replace(
+                        base, feed=self.name, trigger_key=f"cqc:{provider.provider_id}", event_date=registered,
+                        regions=regions,
+                        data={**base.data, "located_by": "registered with CQC",
+                              "located_date": registered.isoformat() if registered else None,
+                              "previous_postcode": base.data["postcode"],
+                              "inferred_local_authority": provider.local_authority,
+                              "cqc_provider_address": provider.address, "cqc_provider_postcode": provider.postal_code},
+                    ))
+        return out
+
+    def _move(self, number: str, counts: Counter[str]) -> tuple[str, date] | None:
+        """(previous postcode, date first seen at the current one) if it moved away from a shared postcode."""
+        history = self.data.store.history("companies_house", "company", number)
+        current = postcode_key(office_postcode(history[-1].payload))
+        since = None
+        for snapshot in reversed(history):
+            postcode = office_postcode(snapshot.payload)
+            if postcode_key(postcode) == current:
+                since = snapshot.fetched_at.date()
+                continue
+            return (postcode, since) if is_shared(postcode, counts) and since else None
+        return None
 
 
 class NeverInspectedFeed:
@@ -365,10 +423,11 @@ class CareVertical:
     def __init__(self, store: Store, scope: CareScope):
         self.data = CareData(store, scope)
 
-    def feeds(self) -> list[PoorRatingsFeed | NeverInspectedFeed | NewCompaniesFeed | LocationUnknownFeed]:
+    def feeds(self) -> list[Any]:
         return [
             PoorRatingsFeed(self.data),
             NeverInspectedFeed(self.data),
             NewCompaniesFeed(self.data),
             LocationUnknownFeed(self.data),
+            CompanyLocatedFeed(self.data),
         ]

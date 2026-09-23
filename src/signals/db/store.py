@@ -193,6 +193,14 @@ class Store:
         )
         return {r[0] for r in rows}
 
+    def ids_with_history(self, source: str, entity_type: str) -> set[str]:
+        """IDs of entities with more than one stored version (i.e. that have changed)."""
+        rows = self.conn.execute(
+            "SELECT entity_id FROM snapshots WHERE source=? AND entity_type=? GROUP BY entity_id HAVING COUNT(*)>1",
+            (source, entity_type),
+        )
+        return {r[0] for r in rows}
+
     def history(self, source: str, entity_type: str, entity_id: str) -> list[Snapshot]:
         """All stored versions, oldest first."""
         rows = self.conn.execute(

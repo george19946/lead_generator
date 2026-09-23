@@ -5,7 +5,8 @@ every new company incorporated with a care SIC code (filtered by region later, a
 
 - Backfill lists the in-scope locations (cheap list pages), then fetches every location's detail and
   every registered location's provider. It resumes: anything fetched within `fresh_hours` is skipped.
-- Sync fetches CQC changes since the stored watermark and keeps the in-scope or already tracked ones.
+- Sync fetches CQC changes since the stored watermark and keeps the in-scope or already tracked ones,
+  re-reads recent Companies House incorporations, and re-checks watched formation-agent companies (watch.py).
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from signals.sources.companies_house.source import SOURCE as CH
 from signals.sources.companies_house.source import CompaniesHouseSource
 from signals.sources.cqc.source import SOURCE as CQC
 from signals.sources.cqc.source import CqcSource
+from signals.verticals.care.watch import recheck_companies
 
 log = logging.getLogger(__name__)
 
@@ -310,6 +312,10 @@ def run_sync(
 
         ch_from = date.fromisoformat(ch_cursor) - timedelta(days=CH_OVERLAP_DAYS)
         _fetch_companies(ch, store, ch_from, now.date(), stats)
+
+        # Formation-agent companies: re-read their profiles to see if they have moved to a real address.
+        # A failed check is simply retried next time, so it doesn't hold the cursors back.
+        recheck_companies(ch, store, now, bump=stats.bump, fail=lambda _: stats.bump("company_recheck_failed"))
 
         if not stats.failures:
             store.set_cursor(CQC, CQC_CHANGES_STREAM, to_iso(now))

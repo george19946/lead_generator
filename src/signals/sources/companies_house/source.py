@@ -39,5 +39,8 @@ class CompaniesHouseSource:
                 payload=item,
             )
 
+    def profile(self, company_number: str) -> dict | None:
+        return self.client.get_company(company_number)
+
     def fetch(self, window: FetchWindow) -> Iterator[RawRecord]:
         return self.incorporations(window.start.date(), window.end.date())

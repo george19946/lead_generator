@@ -1,5 +1,22 @@
 # Progress
 
+## Watching location-unknown companies (done)
+- `verticals/care/watch.py`: during `sync`, each company at a shared (formation-agent) registered office that was
+  incorporated within **365 days** has its Companies House profile (`GET /company/{number}`) re-read every **28 days**,
+  oldest-checked first, up to **300 per run** (about 3 minutes).
+  - The registered office is replaced only when the **postcode** differs (profiles format addresses differently),
+    so re-checks don't record false changes (live: 25 re-checks, 0 new versions).
+  - A failed re-check is only counted (`company_recheck_failed`) and retried next run; it doesn't hold the sync cursors back.
+- New feed **company_located** (digest section "Now located in your region", `company_located.csv`):
+  - "moved registered office": the company moved from a shared postcode to one in a customer region.
+    Trigger `moved:<postcode>`, dated when our snapshots first showed it.
+  - "registered with CQC": a company still at a formation agent appears as a CQC provider in the database, matched
+    by company number, in a customer region. Trigger `cqc:<provider id>`, dated by the CQC registration date.
+- `Store.ids_with_history()`; `CompaniesHouseClient.get_company()`.
+- Live: the profile shape was confirmed (`registered_office_address` with `premises`/`address_line_1`/`postal_code`).
+- Steady-state cost: about 1,000 watched companies a year, so about 250 profile calls a week (2–4 minutes).
+- 164 offline tests.
+
 ## Milestone 4: CSV/HTML digest per region, location-unknown list, flags, `sample` (code done; user to try it)
 
 ### Done
@@ -38,9 +55,6 @@
 
 ### Next
 - The user updates their copy and runs `uv run signals run --weeks 4`, then opens the digests.
-- Agreed next step: **watch location-unknown companies**. Re-check each one's registered office (one Companies House
-  call per company) and look for a CQC provider with its company number. When either gives a real address,
-  record a regional lead ("new care company, now located in your area").
 - Then milestone 5: README, cron/launchd example, limitations, final PRIVACY_NOTES (including retention of `outputs/`).
 
 ## Milestone 3: feeds, CH↔CQC matching, lead events (done)

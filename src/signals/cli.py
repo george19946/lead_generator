@@ -284,6 +284,7 @@ def sample(
 QUALIFYING = {
     "new_companies": "care companies with a local registered office in the database",
     "location_unknown": "at formation-agent addresses in the database",
+    "company_located": "formation-agent companies located so far",
     "never_inspected": "never inspected in total",
     "poor_ratings": "currently rated Requires improvement or Inadequate",
 }
@@ -303,6 +304,11 @@ def _print_week(week, results: dict[str, FeedResult], examples: int) -> None:
 
 
 def _describe(feed: str, d: dict) -> str:
+    if feed == "company_located":
+        return (
+            f"{d['company_name']} ({d['company_number']}): {d['located_by']} on {d.get('located_date')}, "
+            f"now {d.get('inferred_local_authority') or d.get('postcode')}"
+        )
     if feed in ("new_companies", "location_unknown"):
         cqc = {"yes": "already CQC-registered", "possible": f"possible CQC match: {d.get('cqc_provider_name')}"}
         return (

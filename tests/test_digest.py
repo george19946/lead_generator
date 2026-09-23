@@ -61,7 +61,7 @@ def test_week_outputs_per_region(store, tmp_path):
     assert [p.parent.name for p in paths] == ["london", "east-london"]
     folder = tmp_path / "care" / "2026-09-20" / "london"
     assert sorted(p.name for p in folder.iterdir()) == [
-        "digest.html", "location_unknown.csv", "never_inspected.csv", "never_inspected_all.csv",
+        "company_located.csv", "digest.html", "location_unknown.csv", "never_inspected.csv", "never_inspected_all.csv",
         "new_companies.csv", "poor_ratings.csv",
     ]
     poor = _csv(folder / "poor_ratings.csv")
@@ -90,6 +90,7 @@ def test_digest_html(store, tmp_path):
     assert "&lt;b&gt;Bold &amp; Co&lt;/b&gt;" in html and "<b>Bold" not in html
     assert 'href="poor_ratings.csv"' in html
     assert "Contains CQC data" in html
+    assert "Now located in your region" in html and 'href="company_located.csv"' in html
     assert "https://www.cqc.org.uk/location/L-RI" in html
 
 

@@ -85,9 +85,18 @@ def ch_calls():
 
 
 @pytest.fixture
-def ch(ch_calls, clock):
+def ch_profiles():
+    """Company profiles served at /company/{number} by the fake Companies House (else 404)."""
+    return {}
+
+
+@pytest.fixture
+def ch(ch_calls, ch_profiles, clock):
     def handler(request):
-        ch_calls.append(dict(request.url.params))
+        ch_calls.append({"path": request.url.path, **dict(request.url.params)})
+        if request.url.path.startswith("/company/"):
+            number = request.url.path.rsplit("/", 1)[1]
+            return httpx.Response(200, json=ch_profiles[number]) if number in ch_profiles else httpx.Response(404)
         return httpx.Response(200, json=load_fixture("synthetic/ch_advanced_search.json"))
 
     client = CompaniesHouseClient("k", "https://ch.test", RateLimiter(1000, 1),
