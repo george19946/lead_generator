@@ -1,6 +1,6 @@
 # Progress
 
-## Milestone 2: SQLite store, snapshots, backfill and sync (code done; full backfill waiting on go-ahead)
+## Milestone 2: SQLite store, snapshots, backfill and sync (done)
 
 ### Done
 - `db/schema.py`, `db/store.py` (stdlib sqlite3, WAL, schema version in `PRAGMA user_version`):
@@ -54,11 +54,22 @@
   - Companies House: about 13 calls.
 - Weekly sync estimate: about 870 national location details + tracked providers ≈ **5 min**.
 
+### Full backfill (user's device, 2026-09-23)
+- The user ran `signals backfill --days 90` on their own machine; the DB lives there at `data/signals.db`.
+  The cloud container is ephemeral and isn't used for the real database.
+- Result in one run:
+  - 7,707 CQC locations (the plan said 7,705);
+  - 3,069 providers (0.40 per location, matching the estimate);
+  - 1,874 care-SIC companies (90 days);
+  - 12,650 snapshots, exactly one per record.
+- Hosting advice given: build and run on the device for now, and move the single DB file to a small VPS with cron if
+  unattended weekly runs are wanted. Vercel is unsuitable: function time limits, and no persistent disk for SQLite.
+- Setup notes for a beginner user (Mac/Windows): download the branch ZIP, open Terminal in the project folder,
+  install uv, `uv sync`, and create `.env` with `NAME=value` lines. The README (milestone 5) should cover these steps,
+  including checking `.env` with `cut -d= -f1 .env`.
+
 ### Next
-- **Waiting on the user:** where to run the full backfill. This cloud container is ephemeral, so `data/signals.db`
-  is lost when the session ends. The backfill should run where the database will live (the user's machine or server),
-  or the DB has to be kept some other way.
-- Then milestone 3: feeds (new companies, never inspected, poor ratings), CH↔CQC matching, lead events.
+- Milestone 3: feeds (new companies, never inspected, poor ratings), CH↔CQC matching, lead events.
 
 ## Milestone 1: scaffold, config, API clients (done: both APIs verified live)
 
@@ -153,7 +164,7 @@
 
 ## Milestones
 1. Scaffold + clients + smoke test: done (both APIs verified live)
-2. SQLite schema, snapshots, backfill: code done, full live backfill waiting on go-ahead
+2. SQLite schema, snapshots, backfill: done (full backfill run on the user's device)
 3. Feeds + CH↔CQC matching + tests: not started
 4. CSV/HTML output, region filtering, `sample`: not started
 5. README, cron example, limitations, final PRIVACY_NOTES: not started
