@@ -129,3 +129,40 @@ def test_purge_keeps_current_versions(store):
     assert [s.payload for s in store.history("cqc", "location", "kept")] == [{"v": 2}]
     assert len(store.history("cqc", "location", "stale-but-current")) == 1
     assert store.get("cqc", "location", "gone") is None and store.history("cqc", "location", "gone") == []
+
+
+def test_migrates_a_version_1_database(tmp_path):
+    import sqlite3
+
+    from signals.db.schema import SUPPRESSED
+
+    path = tmp_path / "old.db"
+    Store.open(path).close()
+    conn = sqlite3.connect(path)
+    conn.execute("DROP TABLE suppressed")
+    conn.execute("PRAGMA user_version=1")
+    conn.close()
+    with Store.open(path) as s:
+        assert s.conn.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
+        assert s.suppressed() == []
+    assert "CREATE TABLE IF NOT EXISTS suppressed" in SUPPRESSED
+
+
+def test_suppress_erases_and_blocks(store):
+    store.save_record(RawRecord("cqc", "provider", "P-SOLE", T0, {"name": "Jane Example"}))
+    store.save_record(rec("L-1", {"providerId": "P-SOLE", "name": "Jane's Care"}))
+    store.save_record(rec("L-2", {"providerId": "P-OTHER"}))
+    store.conn.execute(
+        "INSERT INTO lead_events (vertical, feed, entity_key, trigger_key, week_ending, created_at, data)"
+        " VALUES ('care', 'never_inspected', 'cqc:location:L-1', 't', '2026-09-06', 'x', ?)",
+        ('{"regions": [], "data": {"provider_id": "P-SOLE"}}',),
+    )
+
+    removed = store.suppress("P-SOLE", "objected by phone", T0)
+
+    assert removed == {"entities": 2, "snapshots": 2, "lead_events": 1}
+    assert store.get("cqc", "location", "L-1") is None and store.get("cqc", "location", "L-2") is not None
+    assert store.save_record(RawRecord("cqc", "provider", "P-SOLE", T0, {"name": "Jane Example"})) is SaveResult.SUPPRESSED
+    assert store.save_record(rec("L-3", {"providerId": "P-SOLE"})) is SaveResult.SUPPRESSED
+    assert [(i, n) for i, _, n in store.suppressed()] == [("P-SOLE", "objected by phone")]
+    assert store.unsuppress("P-SOLE") and not store.is_suppressed("P-SOLE")

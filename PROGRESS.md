@@ -1,5 +1,45 @@
 # Progress
 
+## Milestone 5: README, scheduling, opt-outs, retention, final privacy notes (done)
+- **README.md**, a beginner user guide for the Mac:
+  - setup from the ZIP (move to the home folder, New Terminal at Folder, uv, `.env` with a check command, smoke, backfill);
+  - the weekly run and what each output file is;
+  - scheduling, regions config, opt-outs, updating, and a troubleshooting table (built from the errors we actually hit);
+  - command reference, how it works, PECR table, and **limitations**.
+- **PRIVACY_NOTES.md (final)**:
+  - personal data inventory, storage and security advice;
+  - legal basis (write an LIA) and transparency (Art. 14 privacy notice); customers become controllers;
+  - retention (now covers outputs); the objection/erasure process; PECR table; attribution.
+- **`signals schedule`** (`schedule.py`):
+  - on macOS it writes `~/Library/LaunchAgents/com.signals.weekly.plist` for Monday 07:00 (`--day/--hour/--minute`)
+    and prints the `launchctl load -w` command for the user to run (nothing is switched on automatically);
+  - the job runs `/bin/zsh -lc "cd <project> && <uv> run signals run && <uv> run signals purge"`, logging to
+    `logs/weekly.log`;
+  - it **refuses to schedule from Downloads/Desktop/Documents/iCloud** (macOS privacy protection blocks background
+    jobs there);
+  - on other systems it prints a cron line.
+  - launchd runs a job missed while asleep on wake; a job missed while the Mac was off is skipped.
+- **Opt-outs**: `signals suppress ID [--note] [--remove]`, with no ID to list.
+  - A new `suppressed` table (schema **v2**, with a migration step from v1, tested).
+  - Suppressing erases the entity, its versions and its leads. For a provider, it also covers its locations
+    (found with `json_extract`).
+  - `save_record` refuses suppressed IDs, and locations whose provider is suppressed.
+- **Retention**: `purge` also deletes output week folders and samples older than the cutoff. `logs/` is gitignored.
+- **`backfill --only-new`**: skips every location and provider already stored. Use it after adding or widening
+  a region; sync keeps stored ones current.
+- 176 offline tests.
+
+### For the user to do
+- Update the code (ZIP copy method), `uv sync`, then:
+  - move the project folder to the home folder if it's in Downloads;
+  - run `uv run signals schedule`, then the printed `launchctl load -w …`.
+- Before selling leads: record a legitimate interests assessment, and publish a privacy notice (PRIVACY_NOTES §3).
+
+### Possible next steps (not started)
+- Email the digests automatically (would need an SMTP account; ask before adding dependencies).
+- More verticals (the core is vertical-agnostic), e.g. Ofsted children's homes for the flagged companies.
+- Run on a small server for unattended weekly runs (copy the folder incl. `data/`, use the cron line).
+
 ## Watching location-unknown companies (done)
 - `verticals/care/watch.py`: during `sync`, each company at a shared (formation-agent) registered office that was
   incorporated within **365 days** has its Companies House profile (`GET /company/{number}`) re-read every **28 days**,
@@ -17,7 +57,7 @@
 - Steady-state cost: about 1,000 watched companies a year, so about 250 profile calls a week (2–4 minutes).
 - 164 offline tests.
 
-## Milestone 4: CSV/HTML digest per region, location-unknown list, flags, `sample` (code done; user to try it)
+## Milestone 4: CSV/HTML digest per region, location-unknown list, flags, `sample` (done)
 
 ### Done
 - New feed **location_unknown**: new care companies at a shared registered office (formation agent, ≥ 5 stored
@@ -55,7 +95,6 @@
 
 ### Next
 - The user updates their copy and runs `uv run signals run --weeks 4`, then opens the digests.
-- Then milestone 5: README, cron/launchd example, limitations, final PRIVACY_NOTES (including retention of `outputs/`).
 
 ## Milestone 3: feeds, CH↔CQC matching, lead events (done)
 
@@ -305,5 +344,5 @@
 1. Scaffold + clients + smoke test: done (both APIs verified live)
 2. SQLite schema, snapshots, backfill: done (full backfill run on the user's device)
 3. Feeds + CH↔CQC matching + tests: done
-4. CSV/HTML output, region filtering, `sample`: code done, user to try it on real data
-5. README, cron example, limitations, final PRIVACY_NOTES: not started
+4. CSV/HTML output, region filtering, `sample`: done (plus watching location-unknown companies)
+5. README, scheduling, limitations, opt-outs, final PRIVACY_NOTES: done

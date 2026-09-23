@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import shlex
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -115,6 +116,9 @@ def backfill(
     yes: Annotated[bool, typer.Option("--yes", "-y", help="Don't ask for confirmation")] = False,
     all_england: Annotated[bool, typer.Option(help="Ignore customer regions and fetch all of England")] = False,
     fresh_hours: Annotated[float, typer.Option(help="Skip records fetched this recently (resume)")] = 24,
+    only_new: Annotated[
+        bool, typer.Option(help="Skip everything already stored: use after adding or widening a region")
+    ] = False,
     config: ConfigOption = None,
 ) -> None:
     """Build the baseline: in-scope CQC locations and providers, plus recent care incorporations.
@@ -132,7 +136,8 @@ def backfill(
     try:
         with _open_store(settings) as store:
             typer.echo(f"Listing in-scope CQC locations (regions: {regions})...")
-            plan = plan_backfill(cqc, store, scope, days=days, now=utcnow(), fresh_hours=fresh_hours)
+            plan = plan_backfill(cqc, store, scope, days=days, now=utcnow(), fresh_hours=fresh_hours,
+                                 only_new=only_new)
             for line in plan.describe():
                 typer.echo(line)
             if dry_run:
@@ -338,14 +343,105 @@ def purge(
     ] = None,
     config: ConfigOption = None,
 ) -> None:
-    """Delete data older than the retention period (keeps each live record's current version)."""
+    """Delete data and output folders older than the retention period (keeps each live record's current version)."""
     from signals.core.clock import utcnow
+    from signals.output.writers import purge_outputs
 
     settings = Settings.load(config)
     age = parse_age(older_than) if older_than else timedelta(days=settings.config.retention_days)
+    cutoff = utcnow() - age
     with _open_store(settings) as store:
-        removed = store.purge(utcnow() - age)
-        typer.echo(f"Purged data older than {age.days} days: " + ", ".join(f"{k} {v:,}" for k, v in removed.items()))
+        removed = store.purge(cutoff)
+    removed["output folders"] = purge_outputs(settings.config.outputs_dir, cutoff.date())
+    typer.echo(f"Purged data older than {age.days} days: " + ", ".join(f"{k} {v:,}" for k, v in removed.items()))
+
+
+@app.command()
+def suppress(
+    entity_id: Annotated[
+        str | None, typer.Argument(help="CQC location or provider ID (e.g. 1-123456789) or company number")
+    ] = None,
+    note: Annotated[str | None, typer.Option(help="Why, e.g. 'asked not to be contacted, 1 Oct 2026'")] = None,
+    remove: Annotated[bool, typer.Option("--remove", help="Take the ID off the list again")] = False,
+    config: ConfigOption = None,
+) -> None:
+    """Opt someone out: erase what is stored about them and never store or list them again.
+
+    Use it when a person or organisation asks not to be contacted or to have their data deleted. With no ID,
+    lists everyone on the opt-out list. Suppressing a provider also covers all of its locations. Files
+    already written to outputs/ are not changed; delete or re-run those weeks if needed.
+    """
+    from signals.core.clock import utcnow
+
+    settings = Settings.load(config)
+    with _open_store(settings) as store:
+        if entity_id is None:
+            rows = store.suppressed()
+            typer.echo(f"{len(rows)} on the opt-out list")
+            for sid, added, why in rows:
+                typer.echo(f"  {sid}  added {added:%d %b %Y}{f'  ({why})' if why else ''}")
+            return
+        entity_id = entity_id.strip()
+        if remove:
+            found = store.unsuppress(entity_id)
+            typer.echo(f"{entity_id} removed from the opt-out list" if found else f"{entity_id} was not on the list")
+            return
+        removed = store.suppress(entity_id, note, utcnow())
+        typer.echo(
+            f"{entity_id} is now opted out. Erased: " + ", ".join(f"{k} {v:,}" for k, v in removed.items())
+        )
+
+
+@app.command()
+def schedule(
+    day: Annotated[str, typer.Option(help="Day of the week to run")] = "monday",
+    hour: Annotated[int, typer.Option(min=0, max=23, help="Hour (24-hour clock, local time)")] = 7,
+    minute: Annotated[int, typer.Option(min=0, max=59)] = 0,
+) -> None:
+    """Set up the weekly run: on a Mac, writes a launchd job to switch on; elsewhere, prints a cron line.
+
+    Run it from the project folder. It changes nothing until you run the command it prints.
+    """
+    import platform
+
+    from signals.schedule import DAYS, cron_line, find_uv, launchd_plist, plist_path, protected_folder
+
+    day = day.strip().lower()
+    if day not in DAYS:
+        raise typer.BadParameter(f"choose one of: {', '.join(DAYS)}")
+    project = Path.cwd().resolve()
+    if not (project / "pyproject.toml").exists() or not (project / "config").is_dir():
+        typer.secho("Run this from the project folder (the one containing pyproject.toml).", fg="red", err=True)
+        raise typer.Exit(2)
+    uv = find_uv()
+    if not uv:
+        typer.secho("Couldn't find uv. Install it first (see README).", fg="red", err=True)
+        raise typer.Exit(2)
+    (project / "logs").mkdir(exist_ok=True)
+    home = Path.home()
+    when = f"every {day.title()} at {hour:02d}:{minute:02d}"
+
+    if platform.system() != "Darwin":
+        typer.echo(f"Add this line with `crontab -e` to run {when}:\n")
+        typer.echo(cron_line(project, uv, day, hour, minute))
+        return
+
+    folder = protected_folder(project, home)
+    if folder:
+        typer.secho(
+            f"Warning: the project is inside your {folder} folder. macOS blocks background jobs from reading it.\n"
+            f"Move the whole project folder into your home folder ({home}) first, open Terminal there, and run "
+            "this command again.", fg="yellow",
+        )
+        raise typer.Exit(1)
+    path = plist_path(home)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(launchd_plist(project, uv, day, hour, minute))
+    typer.secho(f"Wrote {path}", fg="green")
+    typer.echo(f"It will run {when} (or as soon as the Mac wakes, if it was asleep). To switch it on, run:\n")
+    typer.echo(f"    launchctl load -w {shlex.quote(str(path))}\n")
+    typer.echo(f"To switch it off later: launchctl unload -w {shlex.quote(str(path))}")
+    typer.echo(f"Each run is logged to {project / 'logs' / 'weekly.log'}")
 
 
 if __name__ == "__main__":

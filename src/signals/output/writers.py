@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import csv
+import re
+import shutil
 from collections.abc import Iterable
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -48,3 +51,19 @@ def write_html(path: Path, digest: Digest) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_html(digest), encoding="utf-8")
     return path
+
+
+def purge_outputs(outputs_dir: Path, before: date) -> int:
+    """Delete week folders (`<vertical>/<YYYY-MM-DD>`) and samples (`samples/<vertical>/<region>_<start>_to_<end>`)
+    that ended before `before`. Returns the number of folders removed; anything else is left alone."""
+    removed = 0
+    if not outputs_dir.is_dir():
+        return 0
+    for folder in sorted(outputs_dir.glob("*/*")) + sorted(outputs_dir.glob("samples/*/*")):
+        if not folder.is_dir():
+            continue
+        match = re.fullmatch(r"(?:.*_to_)?(\d{4}-\d{2}-\d{2})", folder.name)
+        if match and date.fromisoformat(match.group(1)) < before:
+            shutil.rmtree(folder)
+            removed += 1
+    return removed

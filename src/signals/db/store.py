@@ -18,13 +18,14 @@ from typing import Any
 from signals.core.clock import from_iso, to_iso, utcnow
 from signals.core.feed import Lead
 from signals.core.source import RawRecord
-from signals.db.schema import SCHEMA, SCHEMA_VERSION
+from signals.db.schema import MIGRATIONS, SCHEMA, SCHEMA_VERSION
 
 
 class SaveResult(Enum):
     NEW = "new"
     CHANGED = "changed"
     UNCHANGED = "unchanged"
+    SUPPRESSED = "suppressed"  # on the opt-out list: not stored
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,7 @@ class SchemaVersionError(RuntimeError):
 class Store:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
+        self._suppressed: set[str] | None = None
 
     @classmethod
     def open(cls, path: Path | str) -> Store:
@@ -89,9 +91,14 @@ class Store:
         version = self.conn.execute("PRAGMA user_version").fetchone()[0]
         if version > SCHEMA_VERSION:
             raise SchemaVersionError(f"database schema v{version} is newer than this code (v{SCHEMA_VERSION})")
+        # Both the schema and the migrations are idempotent (IF NOT EXISTS), so a crash before the version
+        # is written is harmless.
         if version == 0:
-            # The schema is idempotent (IF NOT EXISTS), so a crash between these two lines is harmless.
             self.conn.executescript(SCHEMA)
+        else:
+            for step in range(version + 1, SCHEMA_VERSION + 1):
+                self.conn.executescript(MIGRATIONS[step])
+        if version < SCHEMA_VERSION:
             self.conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
     def close(self) -> None:
@@ -119,7 +126,12 @@ class Store:
     # --- entities and snapshots -----------------------------------------------------
 
     def save_record(self, record: RawRecord) -> SaveResult:
-        """Store a fetched record. A new snapshot is written only when the payload has changed."""
+        """Store a fetched record. A new snapshot is written only when the payload has changed.
+
+        Records on the opt-out list (by their own ID, or a location's provider ID) are not stored.
+        """
+        if self.is_suppressed(record.entity_id) or self.is_suppressed(record.payload.get("providerId")):
+            return SaveResult.SUPPRESSED
         text = canonical_json(record.payload)
         digest = hashlib.sha256(text.encode()).hexdigest()
         at = to_iso(record.fetched_at)
@@ -262,6 +274,54 @@ class Store:
             params.append(feed)
         rows = self.conn.execute(sql + " ORDER BY feed, event_date DESC, entity_key, trigger_key", params)
         return [_lead(r) for r in rows]
+
+    # --- opt-outs ----------------------------------------------------------------------
+
+    def is_suppressed(self, entity_id: str | None) -> bool:
+        if not entity_id:
+            return False
+        if self._suppressed is None:
+            self._suppressed = {r[0] for r in self.conn.execute("SELECT entity_id FROM suppressed")}
+        return str(entity_id) in self._suppressed
+
+    def suppressed(self) -> list[tuple[str, datetime, str | None]]:
+        rows = self.conn.execute("SELECT entity_id, added_at, note FROM suppressed ORDER BY added_at, entity_id")
+        return [(r[0], from_iso(r[1]), r[2]) for r in rows]
+
+    def suppress(self, entity_id: str, note: str | None, at: datetime) -> dict[str, int]:
+        """Add an ID to the opt-out list and erase everything stored about it. Returns rows deleted per table."""
+        self.conn.execute(
+            "INSERT OR REPLACE INTO suppressed (entity_id, added_at, note) VALUES (?,?,?)", (entity_id, to_iso(at), note)
+        )
+        self._suppressed = None
+        return self.forget(entity_id)
+
+    def unsuppress(self, entity_id: str) -> bool:
+        removed = self.conn.execute("DELETE FROM suppressed WHERE entity_id=?", (entity_id,)).rowcount > 0
+        self._suppressed = None
+        return removed
+
+    def forget(self, entity_id: str) -> dict[str, int]:
+        """Delete an entity, its versions and its leads. For a provider, also its locations and their leads."""
+        with self.transaction():
+            ids = [entity_id] + [
+                r[0]
+                for r in self.conn.execute(
+                    "SELECT entity_id FROM entities WHERE entity_type='location'"
+                    " AND json_extract(payload, '$.providerId')=?",
+                    (entity_id,),
+                )
+            ]
+            counts = {"entities": 0, "snapshots": 0, "lead_events": 0}
+            for one in ids:
+                counts["entities"] += self.conn.execute("DELETE FROM entities WHERE entity_id=?", (one,)).rowcount
+                counts["snapshots"] += self.conn.execute("DELETE FROM snapshots WHERE entity_id=?", (one,)).rowcount
+                counts["lead_events"] += self.conn.execute(
+                    "DELETE FROM lead_events WHERE entity_key LIKE '%:' || ?"
+                    " OR json_extract(data, '$.data.provider_id')=?",
+                    (one, one),
+                ).rowcount
+        return counts
 
     # --- sync state -----------------------------------------------------------------
 

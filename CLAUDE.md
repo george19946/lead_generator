@@ -17,10 +17,13 @@ uv run signals smoke --save-fixtures     # ...and write sanitised fixtures to te
 uv run signals init                      # create the SQLite DB (config `database`)
 uv run signals backfill --dry-run        # list the scope, print the API-call estimate (list calls only)
 uv run signals backfill --days 90        # baseline; asks first, resumes if re-run (--fresh-hours)
+uv run signals backfill --only-new       # after adding/widening a region: fetch only unstored locations
 uv run signals sync                      # fetch changes since the last backfill/sync
 uv run signals run --weeks 4             # sync, record each week's leads, write outputs/care/<week>/<region>/
 uv run signals sample --region london    # preview digest from stored data (records nothing)
-uv run signals purge --older-than 365d
+uv run signals purge --older-than 365d   # DB data and output folders past retention
+uv run signals suppress ID --note "..."  # opt-out: erase + never store/list again (no ID: list; --remove)
+uv run signals schedule                  # macOS launchd weekly job (prints the launchctl command); cron elsewhere
 ```
 
 ## Layout
@@ -30,6 +33,8 @@ uv run signals purge --older-than 365d
 - `src/signals/verticals/care/`: care feeds, SIC codes, CH↔CQC linking. `collect.py`: scope, backfill and sync.
 - `src/signals/db/`: SQLite schema and store (stdlib sqlite3). A snapshot is written only when a payload changes.
 - `src/signals/output/`: CSV and jinja2 HTML digest.
+- `src/signals/schedule.py`: launchd plist / cron line for the weekly job. `src/signals/verticals/care/watch.py`:
+  re-checks formation-agent companies. `README.md` is the user guide (beginner, Mac); `PRIVACY_NOTES.md` is final.
 - `config/signals.yaml`: non-secret config, including customer regions. Secrets go in `.env` only.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
 
@@ -51,6 +56,10 @@ uv run signals purge --older-than 365d
 - A lead is recorded once, for the week whose window (the week + 14 days' grace) holds its event date (core/runner.py).
 - Companies at a registered-office postcode shared by ≥ 5 stored care companies (formation agents) get no region;
   they form the `location_unknown` feed (pseudo-region `national`), listed in every region's digest.
+- Watched companies: shared-address companies < 365 days old get their CH profile re-read every 28 days (≤ 300/run,
+  inside `sync`); a move to a regional postcode or an exact CQC provider link becomes a `company_located` lead.
+- Opt-outs live in the `suppressed` table (schema v2): `save_record` refuses suppressed IDs (and locations of a
+  suppressed provider); `suppress` also erases stored data and leads. Schema changes need a `MIGRATIONS` step.
 - The real database lives on the user's Mac, not in the cloud container; the user is a beginner, so give exact steps.
 - Idempotency: lead events are unique on (vertical, feed, entity_key, trigger_key). Outputs are
   deterministic per (vertical, region, week_ending).

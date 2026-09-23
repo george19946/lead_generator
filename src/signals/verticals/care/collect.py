@@ -100,6 +100,7 @@ class BackfillPlan:
     fresh_location_ids: set[str]  # fetched recently: skipped (resume)
     list_calls: int
     started_at: datetime
+    only_new: bool = False
 
     @property
     def locations_to_fetch(self) -> list[str]:
@@ -125,7 +126,8 @@ class BackfillPlan:
         minutes = self.estimated_seconds / 60
         return [
             f"In-scope CQC locations: {len(self.location_ids):,} "
-            f"({len(self.fresh_location_ids):,} already fetched in the last day, skipped)",
+            f"({len(self.fresh_location_ids):,} {'already stored' if self.only_new else 'fetched in the last day'}, "
+            "skipped)",
             f"CQC calls: {len(self.locations_to_fetch):,} location details + about "
             f"{self.estimated_provider_calls:,} provider details (list pages already made: {self.list_calls})",
             f"Companies House calls: about {self.estimated_ch_calls} ({self.days} days of care-SIC incorporations)",
@@ -134,9 +136,14 @@ class BackfillPlan:
 
 
 def plan_backfill(
-    cqc: CqcSource, store: Store, scope: CareScope, *, days: int, now: datetime, fresh_hours: float = 24
+    cqc: CqcSource, store: Store, scope: CareScope, *, days: int, now: datetime, fresh_hours: float = 24,
+    only_new: bool = False,
 ) -> BackfillPlan:
-    """List the in-scope locations and work out what still needs fetching. Makes only list calls."""
+    """List the in-scope locations and work out what still needs fetching. Makes only list calls.
+
+    With `only_new`, every location already stored is skipped (sync keeps those up to date): use it after
+    adding or widening a region.
+    """
     before = cqc.client.request_count
     ids: dict[str, None] = {}  # ordered set
     for query, by_postcode in scope.list_queries():
@@ -144,13 +151,17 @@ def plan_backfill(
             location_id = summary.get("locationId")
             if location_id and (not by_postcode or scope.matcher.match(postcode=summary.get("postalCode"))):
                 ids[str(location_id)] = None
-    fresh = store.fetched_since(CQC, "location", now - timedelta(hours=fresh_hours))
+    if only_new:
+        fresh = {e.entity_id for e in store.iter_entities(CQC, "location", include_gone=True)}
+    else:
+        fresh = store.fetched_since(CQC, "location", now - timedelta(hours=fresh_hours))
     return BackfillPlan(
         days=days,
         location_ids=list(ids),
         fresh_location_ids=fresh & set(ids),
         list_calls=cqc.client.request_count - before,
         started_at=now,
+        only_new=only_new,
     )
 
 
@@ -246,7 +257,10 @@ def run_backfill(
         progress(f"Fetching {len(todo):,} CQC locations")
         providers = _fetch_locations(cqc, store, todo, stats, progress, keep=lambda *_: True, total=len(todo))
         providers |= _registered_provider_ids(store, plan.fresh_location_ids)
-        fresh = store.fetched_since(CQC, "provider", plan.started_at - timedelta(hours=fresh_hours))
+        if plan.only_new:
+            fresh = {e.entity_id for e in store.iter_entities(CQC, "provider", include_gone=True)}
+        else:
+            fresh = store.fetched_since(CQC, "provider", plan.started_at - timedelta(hours=fresh_hours))
         progress(f"Fetching {len(providers - fresh):,} CQC providers ({len(providers & fresh):,} fresh, skipped)")
         _fetch_providers(cqc, store, providers - fresh, stats, progress)
 

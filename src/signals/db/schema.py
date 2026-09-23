@@ -3,7 +3,17 @@
 Timestamps are stored as UTC ISO 8601 text (`2026-09-22T20:36:39Z`), which sorts correctly.
 """
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+SUPPRESSED = """
+-- Opt-outs: people and organisations who asked not to be contacted or to be erased. Their records are never
+-- stored or listed again; the ID is a CQC location or provider ID, or a company number.
+CREATE TABLE IF NOT EXISTS suppressed (
+    entity_id       TEXT PRIMARY KEY,
+    added_at        TEXT NOT NULL,
+    note            TEXT
+);
+"""
 
 SCHEMA = """
 -- Latest known state of every record fetched from a source.
@@ -68,4 +78,9 @@ CREATE TABLE IF NOT EXISTS runs (
     status          TEXT NOT NULL,          -- "running", "ok", "failed"
     stats           TEXT
 );
-"""
+""" + SUPPRESSED
+
+# Steps from one version to the next, for databases created by older code.
+MIGRATIONS = {
+    2: SUPPRESSED,
+}

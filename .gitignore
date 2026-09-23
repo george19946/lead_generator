@@ -22,3 +22,6 @@ outputs/
 
 # Raw, unsanitised API captures (smoke test writes sanitised fixtures to tests/fixtures)
 .captures/
+
+# Weekly job logs
+logs/

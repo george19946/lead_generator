@@ -135,3 +135,15 @@ def test_sync_holds_cursor_back_on_failure(fake, cqc, ch, store, clock):
     stats = run_sync(cqc, ch, store, CareScope(REGIONS), now=NOW + timedelta(days=7))
     assert stats.failures
     assert store.get_cursor("cqc", "changes") == "2026-09-22T12:00:00Z"
+
+
+def test_backfill_only_new_after_adding_a_region(fake, cqc, ch, store, clock):
+    run_backfill(plan_backfill(cqc, store, CareScope({"london": REGIONS["london"]}), days=7, now=NOW), cqc, ch, store)
+    fake.requests.clear()
+    clock["now"] = NOW + timedelta(days=30)
+    plan = plan_backfill(cqc, store, CareScope(REGIONS), days=7, now=clock["now"], only_new=True)
+    # London's L1 and L2 are stored, so skipped; L5 was a 404 (never stored), so it is tried again.
+    assert plan.locations_to_fetch == ["L5", "L3"]
+    run_backfill(plan, cqc, ch, store)
+    assert fake.detail_calls("locations") == ["L3", "L5"]
+    assert fake.detail_calls("providers") == []  # P1 is already stored

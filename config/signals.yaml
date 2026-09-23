@@ -19,11 +19,13 @@ sources:
     max_requests: 550
     per_seconds: 300
 
-# Customer regions. Each region may filter by any combination of:
-#   cqc_region:        CQC region name, e.g. "London", "South East"
-#   local_authorities: list of local authority names as CQC spells them
+# Customer regions: one digest per region. Each region may filter by any combination of:
+#   cqc_region:        CQC region name, e.g. "London", "South East", "Yorkshire & Humberside"
+#   local_authorities: list of local authority names as CQC spells them, e.g. [Hackney, Tower Hamlets]
 #   postcode_areas:    postcode areas ("E", "SE") or districts ("SE1", "N16")
+#   location_unknown:  also list new companies at formation-agent addresses (default true; false to leave out)
 # A lead matches a region if it matches ANY of the criteria given.
+# After adding or widening a region, run `uv run signals backfill --only-new` to fetch its locations.
 regions:
   london:
     cqc_region: London
