@@ -10,12 +10,13 @@ import json
 import sqlite3
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from signals.core.clock import from_iso, to_iso, utcnow
+from signals.core.feed import Lead
 from signals.core.source import RawRecord
 from signals.db.schema import SCHEMA, SCHEMA_VERSION
 
@@ -44,6 +45,19 @@ class Snapshot:
     fetched_at: datetime
     payload_hash: str
     payload: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class LeadRow:
+    vertical: str
+    feed: str
+    entity_key: str
+    trigger_key: str
+    event_date: date | None
+    week_ending: date
+    created_at: datetime
+    regions: tuple[str, ...]
+    data: dict[str, Any]
 
 
 def canonical_json(payload: Any) -> str:
@@ -210,6 +224,37 @@ class Store:
             out[table] = self.conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
         return out
 
+    # --- lead events ------------------------------------------------------------------
+
+    def record_lead(self, vertical: str, lead: Lead, week_ending: date, at: datetime) -> int:
+        """Record a lead for the week unless its trigger was recorded before. Returns 1 if new, else 0."""
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO lead_events"
+            " (vertical, feed, entity_key, trigger_key, event_date, week_ending, created_at, data)"
+            " VALUES (?,?,?,?,?,?,?,?)",
+            (
+                vertical,
+                lead.feed,
+                lead.entity_key,
+                lead.trigger_key,
+                lead.event_date.isoformat() if lead.event_date else None,
+                week_ending.isoformat(),
+                to_iso(at),
+                canonical_json({"regions": list(lead.regions), "data": lead.data}),
+            ),
+        )
+        return cur.rowcount
+
+    def leads_for_week(self, vertical: str, week_ending: date, feed: str | None = None) -> list[LeadRow]:
+        """Leads first reported in the given week, in a stable order."""
+        sql = "SELECT * FROM lead_events WHERE vertical=? AND week_ending=?"
+        params: list[Any] = [vertical, week_ending.isoformat()]
+        if feed:
+            sql += " AND feed=?"
+            params.append(feed)
+        rows = self.conn.execute(sql + " ORDER BY feed, event_date DESC, entity_key, trigger_key", params)
+        return [_lead(r) for r in rows]
+
     # --- sync state -----------------------------------------------------------------
 
     def get_cursor(self, source: str, stream: str) -> str | None:
@@ -288,6 +333,21 @@ def _entity(row: sqlite3.Row) -> StoredEntity:
         last_fetched_at=from_iso(row["last_fetched_at"]),
         last_changed_at=from_iso(row["last_changed_at"]),
         gone_at=from_iso(row["gone_at"]) if row["gone_at"] else None,
+    )
+
+
+def _lead(row: sqlite3.Row) -> LeadRow:
+    body = json.loads(row["data"])
+    return LeadRow(
+        vertical=row["vertical"],
+        feed=row["feed"],
+        entity_key=row["entity_key"],
+        trigger_key=row["trigger_key"],
+        event_date=date.fromisoformat(row["event_date"]) if row["event_date"] else None,
+        week_ending=date.fromisoformat(row["week_ending"]),
+        created_at=from_iso(row["created_at"]),
+        regions=tuple(body.get("regions", [])),
+        data=body.get("data", {}),
     )
 
 

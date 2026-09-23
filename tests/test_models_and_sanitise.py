@@ -64,6 +64,15 @@ def test_rating_from_single_assessment_framework_when_no_current_ratings():
     assert loc.website == "www.example-lodge.test"
 
 
+def test_newer_assessment_rating_beats_older_current_ratings():
+    raw = load_fixture("synthetic/cqc_location_assessment_only.json")
+    older = {**raw, "currentRatings": {"overall": {"rating": "Good", "reportDate": "2022-02-10"}}}
+    assert CqcLocation.model_validate(older).overall_rating.rating == "Inadequate"
+    newer = {**raw, "currentRatings": {"overall": {"rating": "Good", "reportDate": "2026-09-18"}}}
+    rating = CqcLocation.model_validate(newer).overall_rating
+    assert (rating.rating, rating.framework) == ("Good", "currentRatings")
+
+
 def test_normalise_rating_spellings():
     from signals.sources.cqc.models import normalise_rating
 

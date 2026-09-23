@@ -7,6 +7,7 @@ the register's region name, the local authority, or the postcode area/district.
 from __future__ import annotations
 
 import re
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 
 from signals.settings import RegionConfig
@@ -69,3 +70,51 @@ class RegionMatcher:
             ):
                 hits.append(name)
         return hits
+
+
+class PostcodeLookup:
+    """Infer a register's region and local authority for a postcode, learned from records that have both.
+
+    Some sources (e.g. company registers) give only a postcode. Records that carry a postcode *and* a region
+    (e.g. CQC locations) vote per postcode district. If the district is unknown, the postcode area is used,
+    but only when it is dominated by one region (`AREA_AGREEMENT`), because areas can straddle regions.
+    """
+
+    AREA_AGREEMENT = 0.9
+    AREA_MIN_SAMPLES = 5
+
+    def __init__(self) -> None:
+        self._district_region: dict[str, Counter[str]] = defaultdict(Counter)
+        self._district_la: dict[str, Counter[str]] = defaultdict(Counter)
+        self._area_region: dict[str, Counter[str]] = defaultdict(Counter)
+
+    def add(self, postcode: str | None, region: str | None, local_authority: str | None) -> None:
+        district = outward_code(postcode)
+        if not district:
+            return
+        if region:
+            self._district_region[district][region] += 1
+            self._area_region[_OUTWARD.match(district).group(1)][region] += 1
+        if local_authority:
+            self._district_la[district][local_authority] += 1
+
+    def lookup(self, postcode: str | None) -> tuple[str | None, str | None]:
+        """(region, local_authority) for the postcode; either may be None."""
+        district = outward_code(postcode)
+        if not district:
+            return None, None
+        region = _top(self._district_region.get(district))
+        local_authority = _top(self._district_la.get(district))
+        if region is None:
+            votes = self._area_region.get(_OUTWARD.match(district).group(1))
+            if votes and sum(votes.values()) >= self.AREA_MIN_SAMPLES:
+                name, count = max(votes.items(), key=lambda kv: (kv[1], kv[0]))
+                if count / sum(votes.values()) >= self.AREA_AGREEMENT:
+                    region = name
+        return region, local_authority
+
+
+def _top(votes: Counter[str] | None) -> str | None:
+    if not votes:
+        return None
+    return max(votes.items(), key=lambda kv: (kv[1], kv[0]))[0]

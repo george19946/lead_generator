@@ -1,5 +1,69 @@
 # Progress
 
+## Milestone 3: feeds, CH↔CQC matching, lead events (code done; waiting on the user's real-data run)
+
+### Done
+- Core (vertical-agnostic):
+  - `core/feed.py`: `Week` (Mon–Sun, `last_completed`), `Lead`, and the `Feed` and `Vertical` protocols.
+  - `core/runner.py`: `run_week` records each lead **once**, using `INSERT OR IGNORE` on (vertical, feed, entity_key, trigger_key),
+    for the week whose window contains its event date. The window is the week plus **14 days' grace** for late publication.
+    Undated events are recorded when first seen. Re-running a week returns the same leads.
+    A lead is never reported again in a later week.
+  - `core/legal_form.py`: `LegalForm` and PECR `suggested_channel`: email OK for corporate subscribers;
+    otherwise "phone - check TPS/CTPS first" if there is a phone number, else "post only". An unknown form uses the stricter rule.
+  - `core/matching.py`: name normalisation (case, punctuation, &, legal suffixes) and difflib similarity.
+    `NameIndex` blocks candidates by first token and postcode district.
+    A match needs a score ≥ 0.93, or ≥ 0.85 with the same district.
+  - `core/regions.py`: `PostcodeLookup` infers region and local authority for postcode-only records (Companies House)
+    from stored CQC records. It votes per district, and falls back to the area only at ≥ 90% agreement.
+- Source mappings:
+  - Companies House `company_type` and company-number prefix → legal form
+    (e.g. `limited-partnership`/LP = partnership; Scottish partnership/SL = corporate).
+  - CQC provider `ownershipType` + `companiesHouseNumber` → legal form. An "Organisation" with no company number is unknown.
+- Care vertical:
+  - `verticals/care/linking.py`: CH company → CQC provider, by exact company number, else fuzzy name (+postcode).
+  - `verticals/care/feeds.py`:
+    - **new_companies**:
+      - trigger: incorporation date;
+      - `cqc_registered` yes (number) / possible (fuzzy) / no;
+      - legal form and channel (phone unknown).
+    - **never_inspected**:
+      - qualifies: registered adult social care, with no rating in either framework, no `historicRatings`
+        and no `lastInspection` date (live data showed a rated location with no `lastInspection`);
+      - trigger: registration date, so weekly leads are **new registrations only**. `leads()` returns the full list
+        for `never_inspected_all.csv` (M4). Dormant locations are included, flagged `dormant`.
+    - **poor_ratings**:
+      - qualifies: current rating Requires improvement or Inadequate;
+      - trigger: rating + publication date, so a re-rating is a new lead;
+      - previous rating from `historicRatings` (or the old `currentRatings`, for an assessment-framework rating),
+        else from our snapshots;
+      - `rating_change`: downgrade / first rating / no change / improved but still poor;
+      - undated ratings are dated by when our snapshots first showed them.
+  - Every CQC lead carries location, provider, contact, legal form, channel and profile URL fields for M4's CSV.
+- `CqcLocation.overall_rating` now returns the **newer** of `currentRatings` and the assessment-framework rating.
+  Previously `currentRatings` always won, which could hide a newer poor rating.
+- CLI: `signals run [--week-ending YYYY-MM-DD] [--weeks N] [--no-sync] [--examples 5]`.
+  It syncs first, records the leads, and prints per-feed counts, region counts and example leads. Files come in M4.
+- 144 offline tests.
+
+### Live check (2026-09-23, throwaway DB: Tower Hamlets + Hackney, 90 days)
+- Backfill: 288 locations, 133 providers, 1,874 companies (435 calls). No parse failures.
+- **Finding: formation-agent addresses.** 246 of 1,874 new care companies (13%) share a registered-office postcode
+  with ≥ 5 others: LS25 2DY 50, WC2H 9JQ 44, EC1V 2NX 38, EC2A 4NA 28, N1 7GU 21, SL3 9LL 19.
+  These are virtual offices, so their postcodes say nothing about where the business operates.
+  Such companies are now flagged `shared_registered_office` and get **no customer region**. That cut the Hackney/Tower Hamlets
+  new-company leads over 3 weeks from 32 to 12. (User to confirm; they could be listed as "location unknown" in M4.)
+- Poor ratings: 9 current, 2 of them from the assessment framework. Previous ratings and downgrades came out right.
+  "Inspected but not rated" appears as a historic rating value; its `rating_change` is "unknown".
+- Never inspected: 50 in the two boroughs (8 dormant), some registered since 2019–2023.
+- New companies linked to existing CQC providers: 0 of 1,874. That's expected, since new companies aren't registered yet.
+- Observation: care SIC codes also catch children's services (Ofsted-regulated, not CQC) and recruitment firms,
+  e.g. "OPEN ARMS CHILDRENS SERVICES LTD", "LICHT RECRUITMENT SERVICES LIMITED". Could be flagged by name in M4 if wanted.
+
+### Next
+- User runs `uv run signals run --weeks 4` on the real DB and reports back.
+- Then milestone 4: CSV and HTML digest per region, `never_inspected_all.csv`, `sample`.
+
 ## Milestone 2: SQLite store, snapshots, backfill and sync (done)
 
 ### Done
@@ -67,9 +131,6 @@
 - Setup notes for a beginner user (Mac/Windows): download the branch ZIP, open Terminal in the project folder,
   install uv, `uv sync`, and create `.env` with `NAME=value` lines. The README (milestone 5) should cover these steps,
   including checking `.env` with `cut -d= -f1 .env`.
-
-### Next
-- Milestone 3: feeds (new companies, never inspected, poor ratings), CH↔CQC matching, lead events.
 
 ## Milestone 1: scaffold, config, API clients (done: both APIs verified live)
 
@@ -165,6 +226,6 @@
 ## Milestones
 1. Scaffold + clients + smoke test: done (both APIs verified live)
 2. SQLite schema, snapshots, backfill: done (full backfill run on the user's device)
-3. Feeds + CH↔CQC matching + tests: not started
+3. Feeds + CH↔CQC matching + tests: code done, real-data run on the user's device pending
 4. CSV/HTML output, region filtering, `sample`: not started
 5. README, cron example, limitations, final PRIVACY_NOTES: not started

@@ -98,3 +98,16 @@ def test_parse_age():
     assert parse_age("30") == timedelta(days=30)
     with pytest.raises(typer.BadParameter):
         parse_age("1y")
+
+
+def test_run_without_sync_prints_the_week(config, fake_sources, tmp_path):
+    runner.invoke(app, ["backfill", "--yes", "--days", "7", "--config", str(config)])
+    result = runner.invoke(app, ["run", "--no-sync", "--week-ending", "2026-09-20", "--config", str(config)])
+    assert result.exit_code == 0, result.output
+    assert "Week Mon 14 Sep to Sun 20 Sep 2026" in result.output
+    assert "never_inspected:" in result.output and "poor_ratings:" in result.output
+
+
+def test_run_rejects_unknown_vertical(config):
+    result = runner.invoke(app, ["run", "--no-sync", "--vertical", "dentists", "--config", str(config)])
+    assert result.exit_code != 0

@@ -127,10 +127,20 @@ class _Addressed(CqcModel):
 
     @property
     def overall_rating(self) -> EffectiveRating | None:
-        """The current overall rating, from `currentRatings` or else the newer `assessment` block."""
+        """The current overall rating: the newer of `currentRatings` and the Single Assessment Framework block.
+
+        `currentRatings` wins when only one is dated or the dates are equal.
+        """
         overall = self.current_ratings.overall if self.current_ratings else None
+        current = None
         if overall and normalise_rating(overall.rating):
-            return EffectiveRating(normalise_rating(overall.rating), overall.report_date, "currentRatings")
+            current = EffectiveRating(normalise_rating(overall.rating), overall.report_date, "currentRatings")
+        assessed = self._assessment_rating()
+        if current and assessed and assessed.published and current.published and assessed.published > current.published:
+            return assessed
+        return current or assessed
+
+    def _assessment_rating(self) -> EffectiveRating | None:
         best: EffectiveRating | None = None
         best_key: tuple[date, date] | None = None
         for assessment in self.assessment:

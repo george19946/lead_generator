@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import timedelta
+from collections import Counter
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
@@ -13,6 +14,7 @@ import typer
 from signals.settings import MissingSecretError, Settings
 
 if TYPE_CHECKING:
+    from signals.core.runner import FeedResult
     from signals.db.store import Store
     from signals.sources.companies_house.source import CompaniesHouseSource
     from signals.sources.cqc.source import CqcSource
@@ -178,6 +180,90 @@ def _report(stats: CollectStats, cqc: CqcSource, ch: CompaniesHouseSource) -> No
         typer.secho(f"{len(stats.failures)} failure(s); re-run to retry them:", fg="yellow")
         for line in stats.failures[:20]:
             typer.secho(f"  - {line}", fg="yellow")
+
+
+VERTICALS = ("care",)
+
+
+@app.command()
+def run(
+    vertical: Annotated[str, typer.Option(help="Vertical to run")] = "care",
+    week_ending: Annotated[
+        datetime | None,
+        typer.Option(formats=["%Y-%m-%d"], help="Last day of the digest week (default: the most recent Sunday)"),
+    ] = None,
+    weeks: Annotated[int, typer.Option(min=1, max=52, help="How many weeks to run, ending with --week-ending (oldest first)")] = 1,
+    do_sync: Annotated[bool, typer.Option("--sync/--no-sync", help="Fetch changes before evaluating")] = True,
+    examples: Annotated[int, typer.Option(min=0, help="Example leads to print per feed")] = 5,
+    config: ConfigOption = None,
+) -> None:
+    """Evaluate the feeds for a digest week and record its new leads (sync first by default)."""
+    from signals.core.clock import utcnow
+    from signals.core.feed import Week
+    from signals.core.runner import run_week
+    from signals.verticals.care.collect import CareScope, NotBackfilledError, run_sync
+    from signals.verticals.care.feeds import CareVertical
+
+    if vertical not in VERTICALS:
+        raise typer.BadParameter(f"unknown vertical {vertical!r}; choose from {', '.join(VERTICALS)}")
+    settings = Settings.load(config)
+    scope = CareScope(settings.config.regions)
+    last = Week(week_ending.date()) if week_ending else Week.last_completed(utcnow().date())
+    run_weeks = [last]
+    while len(run_weeks) < weeks:
+        run_weeks.insert(0, run_weeks[0].previous())
+
+    with _open_store(settings) as store:
+        if do_sync:
+            cqc, ch = _make_sources(settings)
+            try:
+                stats = run_sync(cqc, ch, store, scope, now=utcnow(), progress=typer.echo)
+            except NotBackfilledError as exc:
+                typer.secho(str(exc), fg="red", err=True)
+                raise typer.Exit(2) from exc
+            finally:
+                cqc.client.close()
+                ch.client.close()
+            _report(stats, cqc, ch)
+            if stats.failures:
+                typer.secho("Sync incomplete; evaluating with the data fetched so far.", fg="yellow")
+        for week in run_weeks:
+            results = run_week(CareVertical(store, scope), store, week, now=utcnow())
+            _print_week(week, results, examples)
+
+
+QUALIFYING = {
+    "new_companies": "care companies in the database",
+    "never_inspected": "never inspected in total",
+    "poor_ratings": "currently rated Requires improvement or Inadequate",
+}
+
+
+def _print_week(week, results: dict[str, FeedResult], examples: int) -> None:
+    typer.secho(f"\nWeek {week.start:%a %d %b} to {week.ending:%a %d %b %Y}", bold=True)
+    for name, result in results.items():
+        per_region = Counter(r for lead in result.leads for r in lead.regions)
+        regions = ", ".join(f"{k} {v}" for k, v in sorted(per_region.items())) or "none"
+        typer.echo(
+            f"  {name}: {len(result.leads)} leads this week ({regions}); "
+            f"{result.qualifying:,} {QUALIFYING.get(name, 'qualifying')}"
+        )
+        for lead in result.leads[:examples]:
+            typer.echo(f"      - {_describe(name, lead.data)}")
+
+
+def _describe(feed: str, d: dict) -> str:
+    if feed == "new_companies":
+        cqc = {"yes": "already CQC-registered", "possible": f"possible CQC match: {d.get('cqc_provider_name')}"}
+        return (
+            f"{d['company_name']} ({d['company_number']}), incorporated {d['incorporated']}, {d.get('postcode')}, "
+            f"{cqc.get(d.get('cqc_registered'), 'not CQC-registered')}"
+        )
+    where = f"{d['location_name']}, {d.get('postcode')} ({d.get('provider_name') or 'provider unknown'})"
+    if feed == "poor_ratings":
+        was = f", was {d['previous_rating']}" if d.get("previous_rating") else ""
+        return f"{where}: {d['rating']} ({d.get('rating_date') or 'undated'}{was}); {d['suggested_channel']}"
+    return f"{where}: registered {d.get('registration_date')}; {d['suggested_channel']}"
 
 
 def parse_age(text: str) -> timedelta:

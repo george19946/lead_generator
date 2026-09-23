@@ -18,8 +18,9 @@ uv run signals init                      # create the SQLite DB (config `databas
 uv run signals backfill --dry-run        # list the scope, print the API-call estimate (list calls only)
 uv run signals backfill --days 90        # baseline; asks first, resumes if re-run (--fresh-hours)
 uv run signals sync                      # fetch changes since the last backfill/sync
+uv run signals run --weeks 4             # sync, then record and print each week's leads (--no-sync, --week-ending)
 uv run signals purge --older-than 365d
-# Planned (later milestones): run --vertical care --week-ending YYYY-MM-DD, sample --region london
+# Planned (later milestones): CSV/HTML outputs from `run`, sample --region london
 ```
 
 ## Layout
@@ -47,6 +48,9 @@ uv run signals purge --older-than 365d
 - Personal data: `contacts`, `nominatedIndividual` and other `person*` fields are stripped before storage
   unless `include_personal_names: true`. Sole-trader provider names are redacted in committed fixtures.
 - Never-inspected feed: the digest and feed CSV show **new entries only**. `never_inspected_all.csv` holds the full list.
+- A lead is recorded once, for the week whose window (the week + 14 days' grace) holds its event date (core/runner.py).
+- Companies at a registered-office postcode shared by ≥ 5 stored care companies (formation agents) get no region.
+- The real database lives on the user's Mac, not in the cloud container; the user is a beginner, so give exact steps.
 - Idempotency: lead events are unique on (vertical, feed, entity_key, trigger_key). Outputs are
   deterministic per (vertical, region, week_ending).
 - Fuzzy matching uses stdlib difflib (no rapidfuzz), to keep dependencies minimal.
