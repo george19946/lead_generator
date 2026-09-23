@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ d.title }}</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1b1f24; --muted: #5d6671; --line: #e2e6ea; --head: #f0f2f5;
+    --link: #1f5fbf; --accent: #243b53;
+    --bad-bg: #fde8e8; --bad: #9b1c1c; --warn-bg: #fdf1dc; --warn: #8a4b00; --good-bg: #e3f4ea; --good: #1d6b3a;
+    --info-bg: #e5eefb; --info: #1f4f96; --neutral-bg: #eceff3; --neutral: #3d4651;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #191d23; --text: #e6e9ed; --muted: #9aa4af; --line: #2b323b; --head: #20262e;
+      --link: #7fb0ff; --accent: #c9d6e6;
+      --bad-bg: #3d1a1a; --bad: #ffb4b4; --warn-bg: #3b2a10; --warn: #ffd38a; --good-bg: #16301f; --good: #9be2b3;
+      --info-bg: #182a44; --info: #a9c8ff; --neutral-bg: #262d36; --neutral: #c3cbd4;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 16px 48px; }
+  header h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.01em; color: var(--accent); }
+  header p { margin: 0; color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 22px 0 8px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile .v { font-size: 28px; font-weight: 650; line-height: 1.1; }
+  .tile .l { font-weight: 600; margin-top: 4px; }
+  .tile .n { color: var(--muted); font-size: 13px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-top: 22px; padding: 18px 18px 8px; }
+  section h2 { margin: 0 0 4px; font-size: 19px; }
+  .count { color: var(--muted); font-weight: 500; }
+  .intro { margin: 0 0 12px; color: var(--muted); max-width: 900px; }
+  .csv { font-size: 13px; }
+  .scroll { overflow-x: auto; margin: 0 -18px; padding: 0 18px 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+       background: var(--head); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { min-width: 190px; }
+  td .sub { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .badge { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 600;
+           white-space: nowrap; margin-top: 3px; }
+  .t-bad { background: var(--bad-bg); color: var(--bad); }
+  .t-warn { background: var(--warn-bg); color: var(--warn); }
+  .t-good { background: var(--good-bg); color: var(--good); }
+  .t-info { background: var(--info-bg); color: var(--info); }
+  .t-neutral { background: var(--neutral-bg); color: var(--neutral); }
+  .empty { color: var(--muted); font-style: italic; margin: 4px 0 14px; }
+  .files li, .notes li { margin: 4px 0; }
+  footer { margin-top: 26px; color: var(--muted); font-size: 13px; }
+  footer ul { padding-left: 18px; }
+  @media print {
+    body { background: #fff; font-size: 11px; }
+    section, .tile { border-color: #ccc; break-inside: avoid-page; }
+    .scroll { overflow: visible; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>{{ d.title }}</h1>
+    <p>{{ d.subtitle }}</p>
+  </header>
+
+  <div class="tiles">
+  {% for t in d.tiles %}
+    <div class="tile"><div class="v">{{ t.value }}</div><div class="l">{{ t.label }}</div>{% if t.note %}<div class="n">{{ t.note }}</div>{% endif %}</div>
+  {% endfor %}
+  </div>
+
+  {% for s in d.sections %}
+  <section id="{{ s.key }}">
+    <h2>{{ s.title }} <span class="count">({{ s.rows | length }})</span></h2>
+    <p class="intro">{{ s.intro }}{% if s.csv_name %} <a class="csv" href="{{ s.csv_name }}">Download CSV</a>{% endif %}</p>
+    {% if s.html_rows %}
+    <div class="scroll">
+      <table>
+        <thead><tr>{% for h in s.html_headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in s.html_rows %}
+          <tr>
+          {% for c in row %}
+            <td>
+              {%- if c.url and c.text %}<a href="{{ c.url }}">{{ c.text }}</a>{% elif c.text %}{{ c.text }}{% endif -%}
+              {%- if c.badge %}{% if c.text %}<br>{% endif %}<span class="badge t-{{ c.tone }}">{{ c.badge }}</span>{% endif -%}
+              {%- if c.sub %}<span class="sub">{{ c.sub }}</span>{% endif -%}
+            </td>
+          {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">{{ s.empty }}</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <footer>
+    {% if d.files %}
+    <p><strong>Files in this folder</strong></p>
+    <ul class="files">
+    {% for name, what in d.files %}<li><a href="{{ name }}">{{ name }}</a>: {{ what }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    <ul class="notes">
+    {% for n in d.notes %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+  </footer>
+</div>
+</body>
+</html>

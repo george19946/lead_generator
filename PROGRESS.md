@@ -1,6 +1,49 @@
 # Progress
 
-## Milestone 3: feeds, CH↔CQC matching, lead events (code done; waiting on the user's real-data run)
+## Milestone 4: CSV/HTML digest per region, location-unknown list, flags, `sample` (code done; user to try it)
+
+### Done
+- New feed **location_unknown**: new care companies at a shared registered office (formation agent, ≥ 5 stored
+  care companies at the postcode). They're recorded once, under the pseudo-region `national`, and listed in every
+  region's digest. A region can opt out with `location_unknown: false` in `config/signals.yaml`.
+  `new_companies` now holds only companies that can be placed in a region.
+- `verticals/care/flags.py`:
+  - SIC code labels (care codes, plus codes often listed with them; any other code shows as "SIC n");
+  - name flags, as a hint for a person to check, never a filter: children's services (Ofsted, not CQC),
+    recruitment/staffing, training/consultancy. Flagged companies sort last.
+  - Both are worked out when the files are written, so older recorded leads get the current labels too.
+- Output, vertical-agnostic (`signals/output/`):
+  - `model.py`: Digest, Section, Column, Cell, Tile;
+  - `writers.py`: CSV with a UTF-8 BOM so Excel reads it correctly, yes/no for booleans;
+  - a jinja2 HTML template: self-contained page, no scripts, light and dark mode, prints cleanly,
+    and its tables scroll sideways on narrow screens.
+- Care digest (`verticals/care/digest.py`): `outputs/care/<week_ending>/<region>/`, containing
+  `digest.html`, `poor_ratings.csv`, `never_inspected.csv`, `new_companies.csv`, `location_unknown.csv` and
+  `never_inspected_all.csv`.
+  - The weekly files come from recorded lead events, so re-running a week writes byte-identical files (tested).
+  - `never_inspected_all.csv` reflects the database when it's written (the one exception to determinism),
+    with days registered counted to the week's end.
+  - Sort order: Inadequate before Requires improvement, then newest first.
+- CLI:
+  - `run` now writes each region's files (`--no-output` to skip) and prints their paths;
+  - new `signals sample --region london [--weeks 4] [--week-ending]` writes a preview digest to
+    `outputs/samples/care/<region>_<start>_to_<end>/` straight from the data. It fetches and records nothing.
+    Note: Companies House data only goes back to the backfill (90 days).
+- 159 offline tests.
+
+### Live check (throwaway two-borough DB)
+- Two weeks written. A 26-week sample: 1 new poor rating, 1 newly registered (dormant), 27 new companies,
+  239 location unknown, 50 never inspected in total. Screenshots checked at desktop width and at 500px (the
+  narrowest headless Chrome allows).
+
+### Next
+- The user updates their copy and runs `uv run signals run --weeks 4`, then opens the digests.
+- Agreed next step: **watch location-unknown companies**. Re-check each one's registered office (one Companies House
+  call per company) and look for a CQC provider with its company number. When either gives a real address,
+  record a regional lead ("new care company, now located in your area").
+- Then milestone 5: README, cron/launchd example, limitations, final PRIVACY_NOTES (including retention of `outputs/`).
+
+## Milestone 3: feeds, CH↔CQC matching, lead events (done)
 
 ### Done
 - Core (vertical-agnostic):
@@ -84,9 +127,6 @@
   - (b) watch them: re-check the registered office (one Companies House call per company) and look for a CQC
     registration under the company number. When either gives a real address, it becomes a regional lead.
   - Not recommended: using director or PSC addresses, which is personal data.
-
-### Next
-- Milestone 4: CSV and HTML digest per region, `never_inspected_all.csv`, `sample`, plus the user's choice above.
 
 ## Milestone 2: SQLite store, snapshots, backfill and sync (done)
 
@@ -250,6 +290,6 @@
 ## Milestones
 1. Scaffold + clients + smoke test: done (both APIs verified live)
 2. SQLite schema, snapshots, backfill: done (full backfill run on the user's device)
-3. Feeds + CH↔CQC matching + tests: code done, real-data run on the user's device pending
-4. CSV/HTML output, region filtering, `sample`: not started
+3. Feeds + CH↔CQC matching + tests: done
+4. CSV/HTML output, region filtering, `sample`: code done, user to try it on real data
 5. README, cron example, limitations, final PRIVACY_NOTES: not started

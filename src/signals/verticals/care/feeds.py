@@ -7,12 +7,15 @@
   current list is available from `NeverInspectedFeed.leads()` (for never_inspected_all.csv).
 - poor_ratings: locations currently rated Requires improvement or Inadequate.
   Trigger: the rating and its publication date, so a re-rating is a new lead.
+- location_unknown: new care companies registered at a formation agent (shared registered office), so they
+  can't be placed in a region; listed nationally.
 """
 
 from __future__ import annotations
 
 import logging
 from collections import Counter
+from dataclasses import replace
 from datetime import date
 from functools import cached_property
 from typing import Any
@@ -29,6 +32,7 @@ from signals.sources.companies_house.models import ChCompany
 from signals.sources.cqc.legal_form import provider_legal_form
 from signals.sources.cqc.models import CqcLocation, CqcProvider, EffectiveRating, normalise_rating
 from signals.verticals.care.collect import ASC_DIRECTORATE, CareScope
+from signals.verticals.care.flags import name_flag, sic_labels
 from signals.verticals.care.linking import CqcLinker
 
 log = logging.getLogger(__name__)
@@ -36,6 +40,7 @@ log = logging.getLogger(__name__)
 POOR_RATINGS = ("Requires improvement", "Inadequate")
 RATING_RANK = {"Outstanding": 4, "Good": 3, "Requires improvement": 2, "Inadequate": 1}
 ALL_ENGLAND = "england"
+NATIONAL = "national"  # pseudo-region for leads that can't be placed (location_unknown)
 # A registered office shared by this many stored care companies is treated as a formation agent or virtual
 # office (live data: 13% of new care companies use one). Its postcode says nothing about where the business
 # operates, so no customer region is inferred from it.
@@ -99,6 +104,10 @@ class CareData:
     def linker(self) -> CqcLinker:
         return CqcLinker(self.providers.values())
 
+    @cached_property
+    def company_leads(self) -> list[tuple[bool, Lead]]:
+        return build_company_leads(self)
+
     def regions(self, *, region: str | None, local_authority: str | None, postcode: str | None) -> tuple[str, ...]:
         if self.scope.all_england:
             return (ALL_ENGLAND,)
@@ -155,63 +164,86 @@ def _postcode_key(postcode: str | None) -> str:
 
 
 class NewCompaniesFeed:
+    """New care companies whose registered office places them in a customer region."""
+
     name = "new_companies"
 
     def __init__(self, data: CareData):
         self.data = data
 
     def leads(self) -> list[Lead]:
-        out = []
-        sharing = Counter(
-            _postcode_key(c.registered_office_address.postal_code)
-            for c in self.data.companies
-            if c.registered_office_address and c.registered_office_address.postal_code
+        return [lead for shared, lead in self.data.company_leads if not shared]
+
+
+class LocationUnknownFeed:
+    """New care companies registered at a formation agent or virtual office: location unknown.
+
+    Their postcode says nothing about where they operate, so they get no customer region. They are
+    recorded under the pseudo-region "national" and listed separately in every region's digest.
+    """
+
+    name = "location_unknown"
+
+    def __init__(self, data: CareData):
+        self.data = data
+
+    def leads(self) -> list[Lead]:
+        return [
+            replace(lead, feed=self.name, regions=(NATIONAL,)) for shared, lead in self.data.company_leads if shared
+        ]
+
+
+def build_company_leads(data: CareData) -> list[tuple[bool, Lead]]:
+    """A lead per stored company, with whether its registered office is shared (formation agent)."""
+    out = []
+    sharing = Counter(
+        _postcode_key(c.registered_office_address.postal_code)
+        for c in data.companies
+        if c.registered_office_address and c.registered_office_address.postal_code
+    )
+    for company in data.companies:
+        office = company.registered_office_address
+        postcode = office.postal_code if office else None
+        shared_by = sharing.get(_postcode_key(postcode), 0) if postcode else 0
+        shared = shared_by >= SHARED_ADDRESS_MIN
+        region, local_authority = (None, None) if shared else data.postcodes.lookup(postcode)
+        regions = () if shared else data.regions(region=region, local_authority=local_authority, postcode=postcode)
+        link = data.linker.link(company)
+        form = ch_legal_form(company.company_type, company.company_number)
+        created = company.date_of_creation
+        lead = Lead(
+            feed=NewCompaniesFeed.name,
+            entity_key=f"companies_house:company:{company.company_number}",
+            trigger_key=f"incorporated:{created.isoformat() if created else 'unknown'}",
+            event_date=created,
+            regions=regions,
+            data={
+                "company_number": company.company_number,
+                "company_name": company.company_name,
+                "company_type": company.company_type,
+                "company_status": company.company_status,
+                "incorporated": created.isoformat() if created else None,
+                "sic_codes": "; ".join(company.sic_codes),
+                "sic_description": sic_labels(company.sic_codes),
+                "flag": name_flag(company.company_name),
+                "address": office.one_line() if office else None,
+                "postcode": postcode,
+                "shared_registered_office": shared,
+                "companies_at_postcode": shared_by,
+                "inferred_cqc_region": region,
+                "inferred_local_authority": local_authority,
+                "companies_house_url": company.url,
+                "legal_form": str(form),
+                "suggested_channel": suggested_channel(form, has_phone=False),
+                "cqc_registered": "yes" if link and link.exact else ("possible" if link else "no"),
+                "cqc_provider_id": link.provider.provider_id if link else None,
+                "cqc_provider_name": link.provider.name if link else None,
+                "cqc_match": link.method if link else None,
+                "cqc_match_score": link.score if link else None,
+            },
         )
-        for company in self.data.companies:
-            office = company.registered_office_address
-            postcode = office.postal_code if office else None
-            shared_by = sharing.get(_postcode_key(postcode), 0) if postcode else 0
-            shared = shared_by >= SHARED_ADDRESS_MIN
-            region, local_authority = (None, None) if shared else self.data.postcodes.lookup(postcode)
-            if shared:
-                regions: tuple[str, ...] = (ALL_ENGLAND,) if self.data.scope.all_england else ()
-            else:
-                regions = self.data.regions(region=region, local_authority=local_authority, postcode=postcode)
-            link = self.data.linker.link(company)
-            form = ch_legal_form(company.company_type, company.company_number)
-            created = company.date_of_creation
-            out.append(
-                Lead(
-                    feed=self.name,
-                    entity_key=f"companies_house:company:{company.company_number}",
-                    trigger_key=f"incorporated:{created.isoformat() if created else 'unknown'}",
-                    event_date=created,
-                    regions=regions,
-                    data={
-                        "company_number": company.company_number,
-                        "company_name": company.company_name,
-                        "company_type": company.company_type,
-                        "company_status": company.company_status,
-                        "incorporated": created.isoformat() if created else None,
-                        "sic_codes": "; ".join(company.sic_codes),
-                        "address": office.one_line() if office else None,
-                        "postcode": postcode,
-                        "shared_registered_office": shared,
-                        "companies_at_postcode": shared_by,
-                        "inferred_cqc_region": region,
-                        "inferred_local_authority": local_authority,
-                        "companies_house_url": company.url,
-                        "legal_form": str(form),
-                        "suggested_channel": suggested_channel(form, has_phone=False),
-                        "cqc_registered": "yes" if link and link.exact else ("possible" if link else "no"),
-                        "cqc_provider_id": link.provider.provider_id if link else None,
-                        "cqc_provider_name": link.provider.name if link else None,
-                        "cqc_match": link.method if link else None,
-                        "cqc_match_score": link.score if link else None,
-                    },
-                )
-            )
-        return out
+        out.append((shared, lead))
+    return out
 
 
 class NeverInspectedFeed:
@@ -333,5 +365,10 @@ class CareVertical:
     def __init__(self, store: Store, scope: CareScope):
         self.data = CareData(store, scope)
 
-    def feeds(self) -> list[NewCompaniesFeed | NeverInspectedFeed | PoorRatingsFeed]:
-        return [NewCompaniesFeed(self.data), NeverInspectedFeed(self.data), PoorRatingsFeed(self.data)]
+    def feeds(self) -> list[PoorRatingsFeed | NeverInspectedFeed | NewCompaniesFeed | LocationUnknownFeed]:
+        return [
+            PoorRatingsFeed(self.data),
+            NeverInspectedFeed(self.data),
+            NewCompaniesFeed(self.data),
+            LocationUnknownFeed(self.data),
+        ]

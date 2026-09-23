@@ -111,3 +111,22 @@ def test_run_without_sync_prints_the_week(config, fake_sources, tmp_path):
 def test_run_rejects_unknown_vertical(config):
     result = runner.invoke(app, ["run", "--no-sync", "--vertical", "dentists", "--config", str(config)])
     assert result.exit_code != 0
+
+
+def test_run_writes_digest_per_region(config, fake_sources, tmp_path):
+    runner.invoke(app, ["backfill", "--yes", "--days", "7", "--config", str(config)])
+    result = runner.invoke(app, ["run", "--no-sync", "--week-ending", "2026-09-20", "--config", str(config)])
+    assert result.exit_code == 0, result.output
+    digest = tmp_path / "outputs" / "care" / "2026-09-20" / "london" / "digest.html"
+    assert digest.exists() and "Digest:" in result.output
+    result = runner.invoke(app, ["run", "--no-sync", "--no-output", "--week-ending", "2026-09-13", "--config", str(config)])
+    assert result.exit_code == 0 and not (tmp_path / "outputs" / "care" / "2026-09-13").exists()
+
+
+def test_sample_command(config, fake_sources, tmp_path):
+    runner.invoke(app, ["backfill", "--yes", "--days", "7", "--config", str(config)])
+    result = runner.invoke(app, ["sample", "--region", "london", "--week-ending", "2026-09-20", "--config", str(config)])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "outputs" / "samples" / "care" / "london_2026-08-24_to_2026-09-20" / "digest.html").exists()
+    result = runner.invoke(app, ["sample", "--region", "kent", "--config", str(config)])
+    assert result.exit_code != 0

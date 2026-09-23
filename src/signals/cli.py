@@ -192,26 +192,25 @@ def run(
         datetime | None,
         typer.Option(formats=["%Y-%m-%d"], help="Last day of the digest week (default: the most recent Sunday)"),
     ] = None,
-    weeks: Annotated[int, typer.Option(min=1, max=52, help="How many weeks to run, ending with --week-ending (oldest first)")] = 1,
+    weeks: Annotated[
+        int, typer.Option(min=1, max=52, help="How many weeks to run, ending with --week-ending (oldest first)")
+    ] = 1,
     do_sync: Annotated[bool, typer.Option("--sync/--no-sync", help="Fetch changes before evaluating")] = True,
-    examples: Annotated[int, typer.Option(min=0, help="Example leads to print per feed")] = 5,
+    output: Annotated[bool, typer.Option("--output/--no-output", help="Write the digest and CSV files")] = True,
+    examples: Annotated[int, typer.Option(min=0, help="Example leads to print per feed")] = 3,
     config: ConfigOption = None,
 ) -> None:
-    """Evaluate the feeds for a digest week and record its new leads (sync first by default)."""
+    """Record each week's new leads and write a digest per region (fetches changes first by default)."""
     from signals.core.clock import utcnow
-    from signals.core.feed import Week
     from signals.core.runner import run_week
     from signals.verticals.care.collect import CareScope, NotBackfilledError, run_sync
+    from signals.verticals.care.digest import write_week
     from signals.verticals.care.feeds import CareVertical
 
-    if vertical not in VERTICALS:
-        raise typer.BadParameter(f"unknown vertical {vertical!r}; choose from {', '.join(VERTICALS)}")
+    _check_vertical(vertical)
     settings = Settings.load(config)
     scope = CareScope(settings.config.regions)
-    last = Week(week_ending.date()) if week_ending else Week.last_completed(utcnow().date())
-    run_weeks = [last]
-    while len(run_weeks) < weeks:
-        run_weeks.insert(0, run_weeks[0].previous())
+    run_weeks = _weeks(week_ending, weeks)
 
     with _open_store(settings) as store:
         if do_sync:
@@ -228,12 +227,63 @@ def run(
             if stats.failures:
                 typer.secho("Sync incomplete; evaluating with the data fetched so far.", fg="yellow")
         for week in run_weeks:
-            results = run_week(CareVertical(store, scope), store, week, now=utcnow())
+            care = CareVertical(store, scope)
+            results = run_week(care, store, week, now=utcnow())
             _print_week(week, results, examples)
+            if output:
+                paths = write_week(store, care, week, settings.config.regions, settings.config.outputs_dir)
+                for path in paths:
+                    typer.secho(f"  Digest: {path}", fg="green")
+
+
+def _check_vertical(vertical: str) -> None:
+    if vertical not in VERTICALS:
+        raise typer.BadParameter(f"unknown vertical {vertical!r}; choose from {', '.join(VERTICALS)}")
+
+
+def _weeks(week_ending: datetime | None, count: int) -> list:
+    from signals.core.clock import utcnow
+    from signals.core.feed import Week
+
+    last = Week(week_ending.date()) if week_ending else Week.last_completed(utcnow().date())
+    weeks = [last]
+    while len(weeks) < count:
+        weeks.insert(0, weeks[0].previous())
+    return weeks
+
+
+@app.command()
+def sample(
+    region: Annotated[str, typer.Option(help="Region key from config/signals.yaml, e.g. london")],
+    vertical: Annotated[str, typer.Option(help="Vertical")] = "care",
+    week_ending: Annotated[
+        datetime | None,
+        typer.Option(formats=["%Y-%m-%d"], help="Last day of the period (default: the most recent Sunday)"),
+    ] = None,
+    weeks: Annotated[int, typer.Option(min=1, max=52, help="Length of the period in weeks")] = 4,
+    config: ConfigOption = None,
+) -> None:
+    """Write a sample digest for one region from the stored data. Fetches nothing and records nothing."""
+    from signals.verticals.care.collect import CareScope
+    from signals.verticals.care.digest import write_sample
+    from signals.verticals.care.feeds import ALL_ENGLAND, CareVertical
+
+    _check_vertical(vertical)
+    settings = Settings.load(config)
+    regions = settings.config.regions
+    if region not in regions and not (region == ALL_ENGLAND and not regions):
+        known = ", ".join(regions) or ALL_ENGLAND
+        raise typer.BadParameter(f"unknown region {region!r}; configured regions: {known}")
+    with _open_store(settings) as store:
+        care = CareVertical(store, CareScope(regions))
+        path = write_sample(care, _weeks(week_ending, weeks), region, regions.get(region),
+                            settings.config.outputs_dir)
+    typer.secho(f"Sample digest: {path}", fg="green")
 
 
 QUALIFYING = {
-    "new_companies": "care companies in the database",
+    "new_companies": "care companies with a local registered office in the database",
+    "location_unknown": "at formation-agent addresses in the database",
     "never_inspected": "never inspected in total",
     "poor_ratings": "currently rated Requires improvement or Inadequate",
 }
@@ -253,7 +303,7 @@ def _print_week(week, results: dict[str, FeedResult], examples: int) -> None:
 
 
 def _describe(feed: str, d: dict) -> str:
-    if feed == "new_companies":
+    if feed in ("new_companies", "location_unknown"):
         cqc = {"yes": "already CQC-registered", "possible": f"possible CQC match: {d.get('cqc_provider_name')}"}
         return (
             f"{d['company_name']} ({d['company_number']}), incorporated {d['incorporated']}, {d.get('postcode')}, "

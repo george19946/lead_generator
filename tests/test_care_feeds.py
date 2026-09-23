@@ -164,10 +164,14 @@ def test_shared_registered_office_gets_no_region(store):
     assert not any(key.startswith("companies_house:company:1700000") for key in by_key(result))
     # E1 6AN is now shared by 7 companies (5 agent clients, EXAMPLE CARE GROUP LTD, OLD CARE LTD), so all drop.
     assert "companies_house:company:01234567" not in by_key(result)
-    lead = next(lead for lead in CareVertical(store, CareScope(REGIONS)).feeds()[0].leads()
-                if lead.entity_key == "companies_house:company:17000000")
+    # They are listed nationally instead, once each, as "location unknown".
+    unknown = run(store)["location_unknown"]
+    assert {key for key in by_key(unknown)} >= {f"companies_house:company:1700000{n}" for n in range(5)}
+    lead = by_key(unknown)["companies_house:company:17000000"]
+    assert lead.regions == ("national",)
     assert lead.data["shared_registered_office"] is True and lead.data["companies_at_postcode"] == 7
     assert lead.data["inferred_cqc_region"] is None
+    assert lead.data["sic_description"] == "domiciliary / social work without accommodation"
 
 
 def test_runs_are_idempotent_and_leads_are_reported_once(store):
@@ -219,3 +223,21 @@ def test_rating_change():
     assert rating_change("Inadequate", "Requires improvement") == "improved but still poor"
     assert rating_change("Requires improvement", "Requires improvement") == "no change"
     assert rating_change("Insufficient evidence to rate", "Inadequate") == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("name", "flag"),
+    [
+        ("DIAMOND CUT CHILDRENS CARE HOME LTD", "children's services (Ofsted, not CQC)"),
+        ("OPEN ARMS CHILDREN'S SERVICES LTD", "children's services (Ofsted, not CQC)"),
+        ("KEMY SOLUTIONS RECRUITMENT LTD", "recruitment / staffing"),
+        ("BRIGHT CARE TRAINING ACADEMY LTD", "training / consultancy"),
+        ("SAFEPLACE CARE LTD", None),
+        ("CHILDSWORTH HOMECARE LTD", None),  # whole words only
+        (None, None),
+    ],
+)
+def test_name_flags(name, flag):
+    from signals.verticals.care.flags import name_flag
+
+    assert name_flag(name) == flag

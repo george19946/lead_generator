@@ -41,6 +41,8 @@ class RegionConfig(BaseModel):
     cqc_region: str | None = None
     local_authorities: list[str] = []
     postcode_areas: list[str] = []
+    # Also list new companies whose location is unknown (formation-agent addresses) in this region's digest.
+    location_unknown: bool = True
 
     @model_validator(mode="after")
     def _at_least_one_criterion(self) -> RegionConfig:
