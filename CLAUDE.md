@@ -26,6 +26,7 @@ uv run signals sample --region london    # preview digest from stored data (reco
 uv run signals purge --older-than 365d   # DB data and output folders past retention
 uv run signals suppress ID --note "..."  # opt-out: erase + never store/list again (no ID: list; --remove)
 uv run signals schedule                  # macOS launchd weekly job (prints the launchctl command); cron elsewhere
+uv run signals site                      # website + sales sheet into ~/Signals/site from business.yaml + live data
 ```
 
 ## Layout
@@ -37,6 +38,9 @@ uv run signals schedule                  # macOS launchd weekly job (prints the 
 - `src/signals/output/`: CSV and jinja2 HTML digest.
 - `src/signals/schedule.py`: launchd plist / cron line for the weekly job. `src/signals/verticals/care/watch.py`:
   re-checks formation-agent companies. `README.md` is the user guide (beginner, Mac); `PRIVACY_NOTES.md` is final.
+- `src/signals/site/`: static business website (index, sample, privacy notice, opt-out, sales sheet); examples are
+  anonymised (masked names, postcode district, no sole traders). `config/business.yaml`: template for business details.
+- `business/`: LIA, customer terms, outreach templates, launch & automation plan (for the user, not code).
 - `config/signals.yaml`: the config **template**; `setup` copies it to `~/Signals/signals.yaml`, which is the one used.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
 

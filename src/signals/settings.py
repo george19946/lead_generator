@@ -85,6 +85,40 @@ class AppConfig(BaseModel):
     regions: dict[str, RegionConfig] = {}
 
 
+class BusinessConfig(BaseModel):
+    """Your business details for the website and sales material (~/Signals/business.yaml)."""
+
+    brand: str = "Care Signals"
+    tagline: str = "Weekly CQC leads for care compliance consultancies"
+    legal_name: str = ""
+    company_number: str = ""
+    address: str = ""
+    email: str = ""
+    phone: str = ""
+    website: str = ""
+    ico_registration: str = ""
+    price_per_region: float | None = 149
+    price_note: str = "per region, per month, excluding VAT. Cancel any time."
+    trial: str = ""
+    showcase_region: str | None = None
+
+    def missing(self) -> list[str]:
+        """Fields the privacy notice legally needs that are still empty."""
+        return [name for name in ("legal_name", "address", "email") if not getattr(self, name).strip()]
+
+
+BUSINESS_FILE = "business.yaml"
+DEFAULT_BUSINESS_PATH = Path("config/business.yaml")
+
+
+def load_business() -> BusinessConfig:
+    """~/Signals/business.yaml, else the template in the code folder, else defaults."""
+    for path in (data_home() / BUSINESS_FILE, DEFAULT_BUSINESS_PATH):
+        if path.exists():
+            return BusinessConfig.model_validate(yaml.safe_load(path.read_text()) or {})
+    return BusinessConfig()
+
+
 class Settings:
     """Bundles the YAML config with the secrets."""
 

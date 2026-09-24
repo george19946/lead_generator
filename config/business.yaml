@@ -1,0 +1,24 @@
+# Your business details, used by `uv run signals site` for the website, privacy notice and sales sheet.
+# `uv run signals setup` copies this file to ~/Signals/business.yaml: edit that copy, not this one.
+# Open it with:  open -e ~/Signals/business.yaml
+# Keep the spacing as it is, and put text containing a colon in "quotes".
+
+brand: Care Signals                   # the name customers see
+tagline: "Weekly CQC leads for care compliance consultancies"
+
+# Who you are. The privacy notice must name the legal entity responsible for the data (the "controller").
+legal_name: ""                        # e.g. "Care Signals Ltd", or your own name if you're a sole trader
+company_number: ""                    # Companies House number, if a limited company
+address: ""                           # a postal address people can write to
+email: ""                             # e.g. hello@yourdomain.co.uk (used for enquiries and opt-outs)
+phone: ""                             # optional
+website: ""                           # e.g. https://www.yourdomain.co.uk
+ico_registration: ""                  # your ICO data protection fee reference, e.g. ZA123456
+
+# Pricing shown on the website and sales sheet.
+price_per_region: 149                 # pounds per month, per region
+price_note: "per region, per month, excluding VAT. Cancel any time."
+trial: "Your first 4 weeks free, no card needed."
+
+# The region used for the live numbers and anonymised examples on the website (a key from signals.yaml).
+showcase_region: london

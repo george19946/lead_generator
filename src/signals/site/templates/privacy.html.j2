@@ -1,0 +1,79 @@
+{% extends "base.html.j2" %}
+{% from "_macros.j2" import todo, or_todo, mailto %}
+{% block title %}Privacy notice · {{ b.brand }}{% endblock %}
+{% block main %}
+<div class="wrap narrow prose">
+  <h1>Privacy notice</h1>
+  <p class="meta">Last updated {{ today.strftime("%d %B %Y") }}</p>
+
+  <div class="callout">
+    <strong>In short:</strong> we tell care consultancies about care services that may need their help, using
+    information from the public CQC and Companies House registers. If you'd rather not be included, email
+    {{ mailto(b, "Opt out", b.email or "us") }} and we'll remove you for good. <a href="opt-out.html">How to opt out</a>.
+  </div>
+
+  <h2>Who we are</h2>
+  <p>{{ b.brand }} is run by {{ or_todo(b.legal_name, "your legal name") }}{% if b.company_number %}, company number
+    {{ b.company_number }}{% endif %}, {{ or_todo(b.address, "your postal address") }}. We are the controller of the
+    personal data described here. Contact us at {{ mailto(b, "Privacy question", b.email or "our email address") }}{% if b.phone %}
+    or {{ b.phone }}{% endif %}.{% if b.ico_registration %} We are registered with the Information Commissioner's Office
+    (registration {{ b.ico_registration }}).{% endif %}</p>
+
+  <h2>Whose information this is about</h2>
+  <p>Mostly organisations: care providers and companies. Some care providers are <strong>sole traders or
+    partnerships</strong>, whose business name, address and phone number identify a person. This notice is mainly for
+    them. It also covers people who contact us, and our customers' contacts.</p>
+
+  <h2>What we collect, and where from</h2>
+  <ul>
+    <li><strong>From the Care Quality Commission</strong> (its public register and API): service and provider names,
+      addresses, phone numbers, websites, the type of care provided, registration dates and inspection ratings.</li>
+    <li><strong>From Companies House</strong> (its public register): company names, numbers, registered office
+      addresses, company type and activity (SIC) codes.</li>
+  </ul>
+  <p>We do <strong>not</strong> collect the names of registered managers, nominated individuals or company directors:
+    these are removed before anything is stored. We collect no special category data. Ratings concern services, not
+    individuals.</p>
+
+  <h2>What we use it for</h2>
+  <p>To identify care services and companies that may need CQC compliance support, such as those that have just
+    registered, received a poor rating or been newly set up, and to tell our customers about them. Our customers are
+    CQC compliance consultancies, who may contact the services we list to offer their help.</p>
+
+  <h2>Our lawful basis</h2>
+  <p>Legitimate interests (UK GDPR Article 6(1)(f)): ours in running this service, and our customers' in offering
+    relevant services to care providers. The information is already published on public registers for transparency,
+    we use only what is needed, and anyone can opt out at any time. We have assessed this balance and keep a written
+    record of it.</p>
+
+  <h2>Who receives it</h2>
+  <p>Our subscribing customers, who receive a weekly list for the areas they cover. They decide how they use it, and
+    are responsible for their own marketing, including the Privacy and Electronic Communications Regulations. We label
+    every lead with the contact rule that applies (for example, sole traders may not be sent unsolicited marketing
+    emails), and require customers to pass on any opt-out requests to us. Our computer and email providers process
+    data for us under contract. We don't sell data to anyone else.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Twelve months. Older records, lists and reports are deleted automatically each week. If you opt out, we keep only
+    your identifier (for example your CQC ID or company number) on a suppression list, so that you are never added
+    again.</p>
+
+  <h2>Your rights</h2>
+  <p>You can ask us to stop using your information (<strong>object</strong>), to delete it, to correct it, or for a
+    copy of it. To opt out of our lists, see <a href="opt-out.html">how to opt out</a>. For anything else, email
+    {{ mailto(b, "Data protection request", b.email or "us") }}. We reply within one month. If you're unhappy with how we
+    handle your information, you can complain to the Information Commissioner's Office at
+    <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>.</p>
+
+  <h2>Automated decisions and transfers</h2>
+  <p>We don't make decisions about you that have legal or similarly significant effects by automated means. We sort
+    public register entries into lists; people decide whether to contact anyone. Your information is stored in the UK.
+    Where a supplier stores data outside the UK, we make sure appropriate safeguards are in place.</p>
+
+  <h2>Cookies</h2>
+  <p>This website uses no cookies and no tracking.</p>
+
+  <h2>Changes</h2>
+  <p>We will update this notice if anything changes, and show the date above.</p>
+</div>
+{% endblock %}

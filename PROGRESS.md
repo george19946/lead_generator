@@ -1,5 +1,34 @@
 # Progress
 
+## Business launch kit (2026-09-24)
+- **`signals site`** (`src/signals/site/`) builds a static website into `~/Signals/site` from `~/Signals/business.yaml`
+  (template `config/business.yaml`, copied by `setup`) and the database:
+  - `index.html`: landing page, live numbers, what you get, how it works, compliance, pricing, FAQ;
+  - `sample.html`: live counts plus **anonymised** examples. Names are masked except generic words, only the postcode
+    district is shown, sole traders, partnerships and unknown legal forms are excluded, flagged companies are
+    excluded, and there are no phones, websites or IDs;
+  - `privacy.html`: an Article 14 notice (controller, sources, purposes, legitimate interests, recipients,
+    retention, rights, ICO complaint, no cookies);
+  - `opt-out.html`;
+  - `sales-sheet.html`: prints to a one-page A4 PDF.
+  - The pages have no scripts and no cookies. Missing controller details are highlighted as [brackets], and the
+    command warns about them. Zero-valued stats and empty example lists are hidden.
+- `business/`:
+  - `legitimate-interests-assessment.md` (ICO three-part test, with sole traders addressed);
+  - `customer-terms.md` (customers are independent controllers, PECR duties, opt-outs passed back within 5 days);
+  - `outreach-emails.md` (PECR rules for the user's own outreach, where to find prospects, a 3-email sequence,
+    LinkedIn, a phone script, replies);
+  - `launch-and-automation.md` (launch checklist; automation split into deterministic code, Claude-assisted work
+    with human approval, and things not to automate).
+- `digest.sample_leads()` split out of `write_sample` for reuse. 191 tests.
+- **Proposed Milestone 6 (not started, awaiting go-ahead):**
+  - `~/Signals/customers.yaml` and customer commands;
+  - `signals send` (stdlib smtplib, SMTP credentials in `keys.env`) to email each customer their region digest
+    after the Monday run;
+  - trial reminders with a Stripe link;
+  - opt-out notifications to customers who received the lead;
+  - a new-consultancy prospect list from Companies House.
+
 ## Data home: user data kept apart from the code (2026-09-24)
 - **Problem:** the user updated by pasting the new code over the old folder and lost `.env` and `data/`, so had to
   re-enter the keys and backfill again. The update method (and a hidden `.env` inside the code folder) was fragile.

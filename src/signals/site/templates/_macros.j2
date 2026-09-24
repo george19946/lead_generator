@@ -1,0 +1,3 @@
+{% macro todo(text) %}<span class="todo">[{{ text }}]</span>{% endmacro %}
+{% macro or_todo(value, text) %}{% if value %}{{ value }}{% else %}{{ todo(text) }}{% endif %}{% endmacro %}
+{% macro mailto(b, subject, label) %}{% if b.email %}<a href="mailto:{{ b.email }}?subject={{ subject | urlencode }}">{{ label }}</a>{% else %}{{ todo("add your email in business.yaml") }}{% endif %}{% endmacro %}

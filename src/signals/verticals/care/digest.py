@@ -408,10 +408,10 @@ def write_week(
     return paths
 
 
-def write_sample(
-    vertical: CareVertical, weeks: list[Week], region: str, region_config: RegionConfig | None, outputs_dir: Path
-) -> Path:
-    """A preview digest for one region over several weeks, straight from the data. Records nothing.
+def sample_leads(
+    vertical: CareVertical, weeks: list[Week], region: str, region_config: RegionConfig | None
+) -> RegionLeads:
+    """One region's leads over several weeks, straight from the data. Records nothing.
 
     Every lead whose event falls in the period is included (no grace window, undated events left out).
     """
@@ -425,7 +425,15 @@ def write_sample(
     with_unknown = region_config.location_unknown if region_config else True
     chosen = select_region(leads, region, include_location_unknown=with_unknown)
     never_all = never_inspected_all(NeverInspectedFeed(vertical.data).leads(), region, end)
+    return RegionLeads(region, **chosen, never_inspected_all=never_all)
+
+
+def write_sample(
+    vertical: CareVertical, weeks: list[Week], region: str, region_config: RegionConfig | None, outputs_dir: Path
+) -> Path:
+    """A preview digest for one region over several weeks (see sample_leads)."""
+    start, end = weeks[0].start, weeks[-1].ending
     folder = outputs_dir / "samples" / vertical.name / f"{region}_{start}_to_{end}"
     subtitle = f"Sample: {len(weeks)} week{'s' if len(weeks) > 1 else ''}, {start:%a %d %b} to {end:%a %d %b %Y}"
-    return write_region(folder, RegionLeads(region, **chosen, never_inspected_all=never_all),
+    return write_region(folder, sample_leads(vertical, weeks, region, region_config),
                         heading=f"Care leads: {region_label(region)}", subtitle=subtitle, week_ending=end)

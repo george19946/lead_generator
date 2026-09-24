@@ -1,0 +1,84 @@
+{% from "_macros.j2" import todo %}
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ b.brand }}: sales sheet</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* One A4 page when printed (File > Print > Save as PDF). */
+  @page { size: A4; margin: 14mm; }
+  .sheet { max-width: 800px; margin: 24px auto; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 36px 40px; }
+  .sheet h1 { font-size: 30px; line-height: 1.2; margin: 6px 0 10px; letter-spacing: -.01em; }
+  .sheet .lead { color: var(--muted); font-size: 17px; margin: 0 0 20px; }
+  .sheet h2 { font-size: 17px; margin: 22px 0 8px; }
+  .sheet .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .sheet .stat { padding: 12px 14px; box-shadow: none; }
+  .sheet .stat .v { font-size: 26px; }
+  .sheet .stat .l { font-size: 14px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .sheet ul { margin: 0; padding-left: 20px; }
+  .sheet li { margin: 4px 0; }
+  .contact { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); display: flex;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap; font-weight: 600; }
+  .print-hint { text-align: center; color: var(--muted); font-size: 14px; }
+  @media (max-width: 700px) { .two, .sheet .stats { grid-template-columns: 1fr 1fr; } .sheet { padding: 24px 18px; } }
+  @media print {
+    .print-hint { display: none; }
+    .sheet { border: 0; margin: 0; padding: 0; max-width: none; }
+    body { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<p class="print-hint">To save as a PDF: File, then Print, then "Save as PDF".</p>
+<div class="sheet">
+  <p class="eyebrow">{{ b.brand }} · for CQC compliance consultancies</p>
+  <h1>Your next clients, delivered every Monday.</h1>
+  <p class="lead">The care services in your area that have just been rated poorly, just registered with CQC, or just
+    been set up as companies, with contact details and the rules for contacting each one.</p>
+
+  {% if d.has_numbers %}
+  <h2>{{ d.region_name }}, last {{ d.weeks | length }} weeks ({{ d.period }})</h2>
+  <div class="stats">
+  {% for value, label, note in d.stats() %}
+    <div class="stat"><div class="v">{{ value }}</div><div class="l">{{ label }}</div></div>
+  {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="two">
+    <div>
+      <h2>What you get each week</h2>
+      <ul>
+        <li><strong>New poor ratings</strong>, with the previous rating: services that need an action plan now.</li>
+        <li><strong>Newly registered services</strong> facing their first inspection.</li>
+        <li><strong>New care companies</strong> that still need to register with CQC.</li>
+        <li><strong>Companies now located</strong>: new companies we followed until they showed where they operate.</li>
+        <li>The full <strong>never-inspected list</strong> for your area, as a spreadsheet.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Why it works</h2>
+      <ul>
+        <li>First to know: each lead arrives the week it happens, once.</li>
+        <li>Official sources: CQC and Companies House, checked every week.</li>
+        <li>Ready to use: phone, website and links, plus Excel-ready spreadsheets.</li>
+        <li>Compliant: every lead is labelled "email OK", "phone (check TPS/CTPS)" or "post only".</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Price</h2>
+  <p>{% if b.price_per_region %}<strong>£{{ "%g" | format(b.price_per_region) }}</strong> {{ b.price_note }}{% else %}{{ todo("price") }}{% endif %}
+    {%+ if b.trial %}<strong>{{ b.trial }}</strong>{% endif %} Choose any area in England: a CQC region, councils or postcodes.</p>
+
+  <div class="contact">
+    <span>{{ b.email or todo("your email") }}{% if b.phone %} · {{ b.phone }}{% endif %}</span>
+    <span>{{ b.website or todo("your website") }}</span>
+  </div>
+</div>
+</body>
+</html>

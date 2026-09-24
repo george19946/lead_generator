@@ -165,15 +165,24 @@ def setup(
     """
     import shutil
 
-    from signals.settings import CONFIG_FILE, DEFAULT_CONFIG_PATH, KEY_NAMES, data_home, keys_path
+    from signals.settings import (
+        BUSINESS_FILE,
+        CONFIG_FILE,
+        DEFAULT_BUSINESS_PATH,
+        DEFAULT_CONFIG_PATH,
+        KEY_NAMES,
+        data_home,
+        keys_path,
+    )
 
     home = data_home()
     project = Path.cwd()
     home.mkdir(parents=True, exist_ok=True)
     done = []
-    if not (home / CONFIG_FILE).exists() and (project / DEFAULT_CONFIG_PATH).exists():
-        shutil.copy2(project / DEFAULT_CONFIG_PATH, home / CONFIG_FILE)
-        done.append(f"copied the config to {home / CONFIG_FILE}")
+    for name, template in ((CONFIG_FILE, DEFAULT_CONFIG_PATH), (BUSINESS_FILE, DEFAULT_BUSINESS_PATH)):
+        if not (home / name).exists() and (project / template).exists():
+            shutil.copy2(project / template, home / name)
+            done.append(f"copied {template.name} to {home / name}")
     if not keys_path().exists() and (project / ".env").exists():
         shutil.copy2(project / ".env", keys_path())
         keys_path().chmod(0o600)
@@ -428,6 +437,51 @@ def _describe(feed: str, d: dict) -> str:
         was = f", was {d['previous_rating']}" if d.get("previous_rating") else ""
         return f"{where}: {d['rating']} ({d.get('rating_date') or 'undated'}{was}); {d['suggested_channel']}"
     return f"{where}: registered {d.get('registration_date')}; {d['suggested_channel']}"
+
+
+@app.command()
+def site(
+    region: Annotated[str | None, typer.Option(help="Region for the live numbers (default: showcase_region)")] = None,
+    weeks: Annotated[int, typer.Option(min=1, max=13, help="Weeks of numbers to show")] = 4,
+    config: ConfigOption = None,
+) -> None:
+    """Build your website and sales sheet into ~/Signals/site, from business.yaml and the database.
+
+    Upload the whole site folder to any static web host. The sample page shows live numbers with anonymised
+    examples. Re-run it whenever you change business.yaml, or to refresh the numbers.
+    """
+    from signals.core.clock import utcnow
+    from signals.settings import data_home, load_business
+    from signals.site.build import build_site, site_data
+    from signals.verticals.care.collect import CareScope
+    from signals.verticals.care.digest import sample_leads
+    from signals.verticals.care.feeds import ALL_ENGLAND, CareVertical
+
+    settings = Settings.load(config)
+    business = load_business()
+    regions = settings.config.regions
+    region = region or business.showcase_region or next(iter(regions), ALL_ENGLAND)
+    if regions and region not in regions:
+        raise typer.BadParameter(f"unknown region {region!r}; configured regions: {', '.join(regions)}")
+    period = _weeks(None, weeks)
+    leads = None
+    if settings.config.database.exists():
+        with _open_store(settings) as store:
+            leads = sample_leads(CareVertical(store, CareScope(regions)), period, region, regions.get(region))
+    folder = data_home() / "site"
+    build_site(site_data(business, region, period, leads), folder, today=utcnow().date())
+    typer.secho(f"Website built in {folder}", fg="green")
+    typer.echo(f"  Look at it:        open {shlex.quote(str(folder / 'index.html'))}")
+    typer.echo(f"  Sales sheet (PDF): open {shlex.quote(str(folder / 'sales-sheet.html'))}  then File, Print, Save as PDF")
+    if leads is None:
+        typer.secho("  No database yet, so the pages show no live numbers.", fg="yellow")
+    missing = business.missing()
+    if missing:
+        typer.secho(
+            f"  Before publishing, fill in {', '.join(missing)} in {data_home() / 'business.yaml'}: the privacy "
+            "notice must say who you are and how to reach you. Highlighted [brackets] mark the gaps.",
+            fg="yellow",
+        )
 
 
 def parse_age(text: str) -> timedelta:

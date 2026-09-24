@@ -1,0 +1,42 @@
+{% from "_macros.j2" import todo, or_todo %}
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ b.brand }}{% endblock %}</title>
+<meta name="description" content="{% block description %}{{ b.tagline }}{% endblock %}">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html">{{ b.brand }}<span>.</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html#what" {% if page == "index.html" %}aria-current="page"{% endif %}>What you get</a>
+      <a href="sample.html" {% if page == "sample.html" %}aria-current="page"{% endif %}>Sample</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="index.html#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+<main>
+{% block main %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="wrap cols">
+    <div>
+      <p><strong>{{ b.brand }}</strong>{% if b.legal_name and b.legal_name != b.brand %} is a trading name of {{ b.legal_name }}{% endif %}.</p>
+      {% if b.company_number %}<p>Registered in England and Wales, company number {{ b.company_number }}.</p>{% endif %}
+      <p>{{ or_todo(b.address, "your postal address") }}</p>
+      {% if b.ico_registration %}<p>ICO registration {{ b.ico_registration }}.</p>{% endif %}
+    </div>
+    <div>
+      <p><a href="privacy.html">Privacy notice</a> · <a href="opt-out.html">Opt out</a>{% if b.email %} · <a href="mailto:{{ b.email }}">{{ b.email }}</a>{% endif %}</p>
+      <p>Contains CQC data © Care Quality Commission, licensed under the Open Government Licence v3.0.</p>
+      <p>Contains Companies House data.</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

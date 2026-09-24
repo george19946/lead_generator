@@ -1,0 +1,87 @@
+{% extends "base.html.j2" %}
+{% block title %}Sample digest · {{ b.brand }}{% endblock %}
+{% block description %}What a weekly {{ b.brand }} digest contains, with live numbers and anonymised examples.{% endblock %}
+{% block main %}
+<div class="wrap">
+  <div class="hero">
+    <p class="eyebrow">Sample</p>
+    <h1>What the weekly digest looks like</h1>
+    <p class="lead">Real numbers for {{ d.region_name }} over the last {{ d.weeks | length }} weeks ({{ d.period }}).
+      The examples below come from the registers but are <strong>anonymised</strong> here: names are masked and only
+      the postcode district is shown. Subscribers get full names, addresses, phone numbers, websites and links.</p>
+  </div>
+</div>
+
+{% if not d.has_numbers %}
+<section><div class="wrap"><p class="section-intro">Examples appear here once the database has been built.</p></div></section>
+{% else %}
+{% if d.examples.poor_ratings %}
+<section>
+  <div class="wrap">
+    <h2>New poor ratings <span class="stats-note">({{ d.counts.poor_ratings }} in {{ d.weeks | length }} weeks)</span></h2>
+    <p class="section-intro">Services newly rated Requires improvement or Inadequate.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Service</th><th>Rating</th><th>Previously</th><th>Area</th></tr></thead>
+      <tbody>
+      {% for r in d.examples.poor_ratings %}
+        <tr>
+          <td>{{ r.name }}<span class="sub">{{ r.service }}</span></td>
+          <td><span class="badge {{ 'badge-bad' if r.rating == 'Inadequate' else 'badge-warn' }}">{{ r.rating }}</span><span class="sub">published {{ r.rating_date or "recently" }}</span></td>
+          <td>{{ r.previous or "No earlier rating" }}{% if r.change == "downgrade" %}<span class="sub">downgrade</span>{% endif %}</td>
+          <td>{{ r.area }}<span class="sub">{{ r.district }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</section>
+{% endif %}
+
+{% if d.examples.never_inspected %}
+<section>
+  <div class="wrap">
+    <h2>Newly registered, not yet inspected <span class="stats-note">({{ d.counts.never_inspected }})</span></h2>
+    <p class="section-intro">Services that have just registered with CQC. Their first inspection is coming.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Service</th><th>Registered</th><th>Area</th></tr></thead>
+      <tbody>
+      {% for r in d.examples.never_inspected %}
+        <tr><td>{{ r.name }}<span class="sub">{{ r.service }}</span></td><td>{{ r.registered }}</td>
+          <td>{{ r.area }}<span class="sub">{{ r.district }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</section>
+{% endif %}
+
+{% if d.examples.new_companies %}
+<section>
+  <div class="wrap">
+    <h2>New care companies <span class="stats-note">({{ d.counts.new_companies }})</span></h2>
+    <p class="section-intro">Companies just set up to provide care, most of which will need to register with CQC.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Company</th><th>Incorporated</th><th>Activity</th><th>Area</th></tr></thead>
+      <tbody>
+      {% for r in d.examples.new_companies %}
+        <tr><td>{{ r.name }}</td><td>{{ r.incorporated }}</td><td>{{ r.activity }}</td>
+          <td>{{ r.area }}<span class="sub">{{ r.district }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</section>
+{% endif %}
+
+<section>
+  <div class="wrap">
+    <h2>And also</h2>
+    <div class="cards">
+      {% if d.counts.company_located %}<div class="card"><h3>{{ d.counts.company_located }} companies now located</h3><p>New companies from formation-agent addresses that have since revealed they operate in {{ d.region_name }}.</p></div>{% endif %}
+      {% if d.counts.location_unknown %}<div class="card"><h3>{{ d.counts.location_unknown }} with location unknown</h3><p>A national list of new care companies registered at formation agents, for consultancies that work remotely.</p></div>{% endif %}
+      {% if d.never_inspected_total %}<div class="card"><h3>{{ "{:,}".format(d.never_inspected_total) }} never inspected</h3><p>The full list of services in {{ d.region_name }} awaiting a first inspection, as a spreadsheet.</p></div>{% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -44,18 +44,20 @@ Recommended:
 
 - **Legal basis:** legitimate interests (UK GDPR Art. 6(1)(f)). The purpose is identifying care organisations that
   may need CQC compliance services, from registers published for transparency.
-  - **Record a legitimate interests assessment** before commercial use.
+  - The **legitimate interests assessment** is drafted in `business/legitimate-interests-assessment.md`: complete
+    it and sign it before commercial use.
   - It should cover sole traders in particular: their reasonable expectations, the minimal data used, and the
     easy opt-out.
 - **Transparency (Art. 14):**
   - The data is not collected from the people it is about.
-  - Publish a privacy notice (on your website) that covers the sources (CQC, Companies House), the purpose,
-    who receives the leads, retention, and how to object.
+  - Publish a privacy notice on your website that covers the sources (CQC, Companies House), the purpose,
+    who receives the leads, retention, and how to object. `uv run signals site` builds one (`privacy.html`) with an
+    opt-out page, from `~/Signals/business.yaml`.
   - Include a short version, or a link to it, in the first contact with any lead.
 - **Recipients:** customers who receive digests use the leads for their own marketing, so they become
   controllers of that data.
   - Your contract with them should require PECR compliance, honouring objections, and passing opt-outs back
-    to you so you can suppress the person centrally (section 5).
+    to you so you can suppress the person centrally (section 5). A short form is in `business/customer-terms.md`.
 
 ## 4. Retention
 

@@ -1,0 +1,145 @@
+{% extends "base.html.j2" %}
+{% from "_macros.j2" import todo, mailto %}
+{% block title %}{{ b.brand }}: {{ b.tagline }}{% endblock %}
+{% block main %}
+<div class="wrap">
+  <div class="hero">
+    <p class="eyebrow">For CQC compliance consultancies</p>
+    <h1>Know which care services need CQC help, the week it happens.</h1>
+    <p class="lead">Every Monday, {{ b.brand }} sends you the care providers in your area that have just been rated
+      poorly, just registered with CQC, or just been set up as a company. It comes with contact details and the rules
+      for contacting each one.</p>
+    <div class="actions">
+      {% if b.email %}<a class="btn btn-primary" href="mailto:{{ b.email }}?subject={{ 'Free trial' | urlencode }}">Start a free trial</a>{% endif %}
+      <a class="btn btn-secondary" href="sample.html">See a sample</a>
+    </div>
+  </div>
+</div>
+
+{% if d.has_numbers %}
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Live from the registers</p>
+    <h2>{{ d.region_name }}, the last {{ d.weeks | length }} weeks</h2>
+    <p class="section-intro">{{ d.period }}. Counted from the official CQC and Companies House registers.</p>
+    <div class="stats">
+    {% for value, label, note in d.stats() %}
+      <div class="stat"><div class="v">{{ value }}</div><div class="l">{{ label }}</div><div class="n">{{ note }}</div></div>
+    {% endfor %}
+    </div>
+    <p class="stats-note"><a href="sample.html">See anonymised examples</a></p>
+  </div>
+</section>
+{% endif %}
+
+<section id="what">
+  <div class="wrap">
+    <p class="eyebrow">What you get</p>
+    <h2>Four lists of warm leads, every week</h2>
+    <p class="section-intro">Each lead appears once, in the week it happens, so you're first to know and never see
+      the same name twice.</p>
+    <div class="cards">
+      <div class="card"><span class="tag">Highest intent</span><h3>New poor ratings</h3>
+        <p>Services just rated Requires improvement or Inadequate, with their previous rating. They need an action plan
+          before CQC comes back.</p></div>
+      <div class="card"><span class="tag">First inspection due</span><h3>Newly registered services</h3>
+        <p>Care services that have just registered with CQC and have never been inspected. Their first inspection is on
+          its way.</p></div>
+      <div class="card"><span class="tag">Earliest possible</span><h3>New care companies</h3>
+        <p>Companies just set up to provide care, most of which still need to register with CQC. We flag which are
+          already registered.</p></div>
+      <div class="card"><span class="tag">Found for you</span><h3>Companies now located</h3>
+        <p>New companies that used a formation agent's address are watched until they reveal where they operate, then
+          passed to you.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>No searching, no spreadsheets to build</h2>
+    <div class="steps">
+      <div class="step"><h3>Choose your area</h3><p>A CQC region, a list of councils, or postcode areas. Cover as many
+        as you work in.</p></div>
+      <div class="step"><h3>We watch the registers</h3><p>CQC and Companies House are checked every week for new
+        ratings, registrations and companies in your area.</p></div>
+      <div class="step"><h3>You get the digest</h3><p>An easy-to-read page and spreadsheets that open in Excel, with
+        phone, website and links to the official records.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Compliant by design</p>
+    <h2>Built for UK GDPR and PECR</h2>
+    <div class="cards">
+      <div class="card"><h3>Contact rule on every lead</h3><p>Each lead is labelled "email OK", "phone (check TPS/CTPS
+        first)" or "post only" from its legal form, so you stay on the right side of PECR.</p></div>
+      <div class="card"><h3>No personal names collected</h3><p>Registered managers' and nominated individuals' names are
+        removed before anything is stored.</p></div>
+      <div class="card"><h3>Opt-outs honoured</h3><p>Anyone who asks is removed and never listed again. See our
+        <a href="privacy.html">privacy notice</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <p class="eyebrow">Pricing</p>
+    <h2>One simple price per area</h2>
+    <div class="pricing">
+      <div class="price-card">
+        {% if b.price_per_region %}
+        <div class="price">£{{ "%g" | format(b.price_per_region) }} <small>{{ b.price_note }}</small></div>
+        {% else %}
+        <div class="price">{{ todo("set price_per_region in business.yaml") }}</div>
+        {% endif %}
+        <ul class="ticks">
+          <li>Weekly digest every Monday</li>
+          <li>All four lead lists, plus the full never-inspected list for your area</li>
+          <li>Spreadsheets that open in Excel</li>
+          <li>Contact rule on every lead</li>
+          <li>National list of new care companies with unknown locations</li>
+        </ul>
+        {% if b.trial %}<p><strong>{{ b.trial }}</strong></p>{% endif %}
+        {% if b.email %}<a class="btn btn-primary" href="mailto:{{ b.email }}?subject={{ 'Free trial' | urlencode }}">Start a free trial</a>{% endif %}
+      </div>
+      <div>
+        <h3>Is it worth it?</h3>
+        <p>One new client can pay for many months of leads. Poor ratings, first inspections and brand-new
+          providers are the moments care services look for help, and this puts you in front of them first.</p>
+        <h3>Which areas?</h3>
+        <p>Anywhere in England: London, a whole CQC region, a group of councils, or just the postcodes around your
+          office.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap narrow">
+    <p class="eyebrow">Questions</p>
+    <h2>Frequently asked questions</h2>
+    <details><summary>Where does the information come from?</summary>
+      <p>From the official public registers: the Care Quality Commission's API and Companies House. We add value by
+        spotting the changes that matter each week, linking companies to their CQC registrations, and working out the
+        legal form and contact rule for each lead.</p></details>
+    <details><summary>Is this legal under GDPR and PECR?</summary>
+      <p>The leads are organisations, from registers published for transparency. We remove the names of registered
+        managers and nominated individuals, label every lead with the PECR contact rule, and honour opt-outs. Some
+        providers are sole traders: treat their details as personal data, contact them only about relevant services,
+        and stop if asked.</p></details>
+    <details><summary>Couldn't I just search the CQC website?</summary>
+      <p>You could, every week, for every service in your area, and compare the results with last week's. We do that
+        for you, add new companies from Companies House, and follow up companies registered at formation agents until
+        they show where they operate.</p></details>
+    <details><summary>What format is it in?</summary>
+      <p>A web page you can open, print or forward, and CSV spreadsheets for Excel, Numbers or your CRM.</p></details>
+    <details><summary>Can I cancel?</summary>
+      <p>Yes, any time. There's no minimum term.</p></details>
+    <p style="margin-top:24px">Anything else? {{ mailto(b, "Question about " ~ b.brand, "Email us") }}.</p>
+  </div>
+</section>
+{% endblock %}

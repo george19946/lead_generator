@@ -1,0 +1,28 @@
+{% extends "base.html.j2" %}
+{% from "_macros.j2" import todo, mailto %}
+{% block title %}Opt out · {{ b.brand }}{% endblock %}
+{% block main %}
+<div class="wrap narrow prose">
+  <h1>Opt out</h1>
+  <p>If you run a care service or company and don't want to be included in the lists we send to consultancies, we'll
+    remove you straight away and make sure you're never added again.</p>
+  <h2>How</h2>
+  <p>Email {{ mailto(b, "Opt out", b.email or "us") }} with the subject "Opt out" and one of these, so we can find your
+    record:</p>
+  <ul>
+    <li>your CQC location or provider ID (it looks like <code>1-123456789</code>, and is on your CQC profile page);</li>
+    <li>your company number; or</li>
+    <li>your service's name and postcode.</li>
+  </ul>
+  {% if b.address %}<p>Or write to us at {{ b.address }}.</p>{% endif %}
+  <h2>What happens next</h2>
+  <ul>
+    <li>We delete what we hold about you and add your identifier to our suppression list, which stops you being added
+      again even though you're still on the public registers.</li>
+    <li>We confirm by reply, normally within two working days.</li>
+    <li>We tell any customer who received your details in the past that you have opted out.</li>
+  </ul>
+  <p>If a consultancy has already contacted you, please ask them directly to stop as well. They must respect it.</p>
+  <p>More detail is in our <a href="privacy.html">privacy notice</a>.</p>
+</div>
+{% endblock %}

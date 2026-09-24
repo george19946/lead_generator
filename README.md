@@ -23,6 +23,8 @@ touches:
 |---|---|
 | `keys.env` | Your API keys (readable only by you) |
 | `signals.yaml` | Settings, including your customer regions |
+| `business.yaml` | Your business details for the website and sales sheet |
+| `site/` | Your website, built by `uv run signals site` |
 | `data/` | The database |
 | `outputs/` | The weekly digests and spreadsheets |
 | `logs/` | Logs of the automatic weekly runs |
@@ -266,6 +268,7 @@ All commands start with `uv run signals`. Add `--help` to any of them for detail
 | `sample --region NAME [--weeks 4]` | Preview digest for one region. Records nothing |
 | `suppress [ID] [--note …] [--remove]` | Opt-outs (see section 5) |
 | `purge [--older-than 365d]` | Delete data and output folders past the retention period |
+| `site [--region NAME] [--weeks 4]` | Build your website (home, sample, privacy notice, opt-out) and sales sheet into `~/Signals/site` |
 | `schedule [--day monday] [--hour 7]` | Set up the automatic weekly run |
 
 ---
@@ -305,6 +308,21 @@ Code layout, for developers: see `CLAUDE.md`. Tests: `uv run pytest` (offline, a
 | **post only** | Sole trader, partnership or unknown legal form with no phone number. |
 
 See [PRIVACY_NOTES.md](PRIVACY_NOTES.md) for the data protection position.
+
+---
+
+## Running the business
+
+The `business/` folder in the code holds:
+- a signed-off-ready **legitimate interests assessment**;
+- short **customer terms**;
+- **sales outreach templates**;
+- a **launch checklist and automation plan** (`business/launch-and-automation.md`).
+
+To build your website and sales sheet:
+1. Fill in `~/Signals/business.yaml` (`open -e ~/Signals/business.yaml`).
+2. Run `uv run signals site`.
+3. Open `~/Signals/site/index.html` to check it. Upload the `site` folder to any static web host.
 
 ---
 
