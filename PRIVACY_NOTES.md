@@ -20,7 +20,9 @@ No special category data is processed. Ratings concern services, not individuals
 
 ## 2. Where it is kept
 
-- **`data/signals.db`** (SQLite, on the machine that runs the tool) holds:
+Everything lives in the **Signals folder**, `~/Signals` on the machine that runs the tool, kept apart from the code:
+
+- **`data/signals.db`** (SQLite) holds:
   - the latest version of each record, plus earlier versions when a record changed;
   - the recorded leads;
   - sync positions;
@@ -29,11 +31,12 @@ No special category data is processed. Ratings concern services, not individuals
 - **`outputs/`** holds the digests (HTML) and CSVs per week and region, and samples.
 - **`logs/weekly.log`** holds the output of scheduled runs. It includes counts, and at most a few example lead
   names.
-- **`.env`** holds the API keys. It is never committed, printed or logged.
+- **`keys.env`** holds the API keys, readable only by the user's account. The keys are never committed, printed
+  or logged.
 
 Recommended:
 - keep the computer's disk encrypted (FileVault on a Mac);
-- don't sync the project folder to a shared drive;
+- don't sync the Signals folder to a shared drive;
 - send digests to customers through a secure channel rather than as plain email attachments, where
   sole-trader data is included.
 

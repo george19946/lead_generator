@@ -12,6 +12,8 @@ never-inspected locations (CQC), and poor ratings (CQC).
 ```bash
 uv sync                                  # install (Python 3.12, managed by uv)
 uv run pytest                            # tests: offline only, real network raises
+uv run signals setup                     # create ~/Signals (data home), move old in-folder data there, ask for keys
+uv run signals keys                      # save/change API keys in ~/Signals/keys.env (hidden prompt)
 uv run signals smoke --n 5               # live smoke test (needs keys + network access)
 uv run signals smoke --save-fixtures     # ...and write sanitised fixtures to tests/fixtures/
 uv run signals init                      # create the SQLite DB (config `database`)
@@ -35,7 +37,7 @@ uv run signals schedule                  # macOS launchd weekly job (prints the 
 - `src/signals/output/`: CSV and jinja2 HTML digest.
 - `src/signals/schedule.py`: launchd plist / cron line for the weekly job. `src/signals/verticals/care/watch.py`:
   re-checks formation-agent companies. `README.md` is the user guide (beginner, Mac); `PRIVACY_NOTES.md` is final.
-- `config/signals.yaml`: non-secret config, including customer regions. Secrets go in `.env` only.
+- `config/signals.yaml`: the config **template**; `setup` copies it to `~/Signals/signals.yaml`, which is the one used.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
 
 ## Key decisions
@@ -60,6 +62,9 @@ uv run signals schedule                  # macOS launchd weekly job (prints the 
   inside `sync`); a move to a regional postcode or an exact CQC provider link becomes a `company_located` lead.
 - Opt-outs live in the `suppressed` table (schema v2): `save_record` refuses suppressed IDs (and locations of a
   suppressed provider); `suppress` also erases stored data and leads. Schema changes need a `MIGRATIONS` step.
+- **Data home** `~/Signals` (or $SIGNALS_HOME) holds everything that is the user's: `keys.env`, `signals.yaml`,
+  `data/`, `outputs/`, `logs/`. The code folder is disposable (updating = replace it). Relative config paths resolve
+  against the data home. Key precedence: env vars > `~/Signals/keys.env` > `./.env`. Tests set SIGNALS_HOME=tmp_path.
 - The real database lives on the user's Mac, not in the cloud container; the user is a beginner, so give exact steps.
 - Idempotency: lead events are unique on (vertical, feed, entity_key, trigger_key). Outputs are
   deterministic per (vertical, region, week_ending).
@@ -69,7 +74,7 @@ uv run signals schedule                  # macOS launchd weekly job (prints the 
 ## Conventions
 - Tests never call live APIs: use `httpx.MockTransport`. The autouse guard in `tests/conftest.py` makes real I/O raise.
 - Clients take an injectable `transport` and `sleep` so tests are fast and offline.
-- Never log or print API keys. Never commit `.env`.
+- Never log or print API keys (error messages list key names only). Never commit `.env` or `keys.env`.
 - Before any large backfill, estimate the API calls and duration and tell the user first.
 - Milestones: stop after each one, update PROGRESS.md, commit with a clear message, and wait for the go-ahead.
 - Work on branch `claude/sharp-turing-c0z2m0`.

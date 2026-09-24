@@ -1,4 +1,17 @@
-"""Configuration: secrets from the environment / .env, everything else from YAML."""
+"""Configuration: secrets from keys.env (or the environment), everything else from YAML.
+
+Everything that belongs to the user lives in the **data home**, `~/Signals` (or $SIGNALS_HOME), kept apart from
+the code so that replacing the code folder with a new version can never touch it:
+
+    ~/Signals/keys.env        API keys
+    ~/Signals/signals.yaml    config, including customer regions (copied from config/signals.yaml by `setup`)
+    ~/Signals/data/           the database
+    ~/Signals/outputs/        digests and CSVs
+    ~/Signals/logs/           scheduled-run logs
+
+Relative paths in the config are relative to the data home. A `.env` in the current folder is still read
+(for development); keys.env wins over it, and real environment variables win over both.
+"""
 
 from __future__ import annotations
 
@@ -11,13 +24,24 @@ import yaml
 from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEFAULT_CONFIG_PATH = Path("config/signals.yaml")
+DEFAULT_CONFIG_PATH = Path("config/signals.yaml")  # the template in the code folder
+KEYS_FILE = "keys.env"
+CONFIG_FILE = "signals.yaml"
+KEY_NAMES = ("CQC_API_KEY", "COMPANIES_HOUSE_API_KEY")
+
+
+def data_home() -> Path:
+    return Path(os.environ.get("SIGNALS_HOME") or Path.home() / "Signals").expanduser()
+
+
+def keys_path() -> Path:
+    return data_home() / KEYS_FILE
 
 
 class Secrets(BaseSettings):
-    """API keys. Real environment variables take precedence over .env."""
+    """API keys. Real environment variables win, then keys.env in the data home, then a local .env."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
 
     cqc_api_key: SecretStr | None = None
     companies_house_api_key: SecretStr | None = None
@@ -67,12 +91,21 @@ class Settings:
     def __init__(self, config: AppConfig, secrets: Secrets):
         self.config = config
         self.secrets = secrets
+        self.config_path: Path | None = None
 
     @classmethod
     def load(cls, config_path: Path | None = None) -> Settings:
-        path = config_path or Path(os.environ.get("SIGNALS_CONFIG", DEFAULT_CONFIG_PATH))
+        home = data_home()
+        path = config_path or config_file()
         data = yaml.safe_load(path.read_text()) if path.exists() else {}
-        return cls(AppConfig.model_validate(data or {}), Secrets())
+        config = AppConfig.model_validate(data or {})
+        config.database = home / config.database  # an absolute path stays as it is
+        config.outputs_dir = home / config.outputs_dir
+        # Later files win: the data home's keys.env over a local .env.
+        secrets = Secrets(_env_file=(Path(".env"), home / KEYS_FILE))
+        settings = cls(config, secrets)
+        settings.config_path = path
+        return settings
 
     @cached_property
     def cqc_api_key(self) -> str:
@@ -81,6 +114,30 @@ class Settings:
     @cached_property
     def companies_house_api_key(self) -> str:
         return _require(self.secrets.companies_house_api_key, "COMPANIES_HOUSE_API_KEY")
+
+
+def config_file() -> Path:
+    """$SIGNALS_CONFIG, else the data home's signals.yaml, else the template in the code folder."""
+    if os.environ.get("SIGNALS_CONFIG"):
+        return Path(os.environ["SIGNALS_CONFIG"])
+    home_config = data_home() / CONFIG_FILE
+    return home_config if home_config.exists() else DEFAULT_CONFIG_PATH
+
+
+def write_keys(values: dict[str, str]) -> Path:
+    """Write keys.env (readable only by the user), keeping any other lines already in it."""
+    path = keys_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    kept = []
+    if path.exists():
+        for line in path.read_text(errors="replace").splitlines():
+            name = line.split("=", 1)[0].strip()
+            if name not in values:
+                kept.append(line)
+    lines = kept + [f"{name}={value}" for name, value in values.items()]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    path.chmod(0o600)
+    return path
 
 
 class MissingSecretError(RuntimeError):
@@ -94,17 +151,12 @@ def _require(value: SecretStr | None, name: str) -> str:
 
 
 def _missing_message(name: str) -> str:
-    """Say which folder was searched and what was wrong, since the usual cause is being in the wrong folder."""
-    folder = Path.cwd()
-    env = folder / ".env"
-    if not env.exists():
-        hint = (
-            f"There is no .env file in {folder}.\n"
-            "If this isn't your project folder (the one containing your data folder), open Terminal there instead.\n"
-            "If it is, add your keys again (README, setup step 6)."
-        )
+    """Say where keys were looked for and what was wrong. Never prints a key."""
+    path = keys_path()
+    if not path.exists():
+        hint = f"There is no keys file yet ({path})."
     else:
-        lines = [line.strip() for line in env.read_text(errors="replace").splitlines()]
+        lines = [line.strip() for line in path.read_text(errors="replace").splitlines()]
         lines = [line for line in lines if line and not line.startswith("#")]
         # Show variable names only: a line without NAME= may be a bare key, which must never be printed.
         names = [line.split("=", 1)[0].strip() for line in lines if re.fullmatch(r"[A-Za-z_]\w*\s*=.*", line)]
@@ -112,8 +164,5 @@ def _missing_message(name: str) -> str:
         found = ", ".join(names) or "no NAME=value lines"
         if other:
             found += f", plus {other} line(s) without NAME= (not shown)"
-        hint = (
-            f"{env} has no line starting {name}= (it has: {found}).\n"
-            "Each line must look like NAME=key. Add your keys again (README, setup step 6)."
-        )
-    return f"{name} is not set. {hint}"
+        hint = f"{path} has no {name} (it has: {found})."
+    return f"{name} is not set. {hint}\nAdd your keys with:  uv run signals keys"

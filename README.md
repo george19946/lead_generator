@@ -15,6 +15,18 @@ consultancies. Each digest lists:
 Each lead appears **once**, in the week it happens, and carries the contact rule you must follow (see
 [Contact rules](#contact-rules-pecr)).
 
+**Two folders.** The **code folder** is what you download; it can be deleted and replaced at any time. Everything
+that is yours lives in a separate **Signals folder** in your home folder (`~/Signals`), which updating never
+touches:
+
+| In `~/Signals` | What it is |
+|---|---|
+| `keys.env` | Your API keys (readable only by you) |
+| `signals.yaml` | Settings, including your customer regions |
+| `data/` | The database |
+| `outputs/` | The weekly digests and spreadsheets |
+| `logs/` | Logs of the automatic weekly runs |
+
 ---
 
 ## Contents
@@ -64,20 +76,13 @@ Then **quit Terminal completely (Cmd + Q)**, and open it again in the folder as 
 uv sync
 ```
 
-**Step 6: add your keys.** Replace only the `PASTE-…` part and keep the quote marks. Note that the first line
-has one `>` and the second has two `>>`:
+**Step 6: create your Signals folder and add your keys:**
 ```
-echo "CQC_API_KEY=PASTE-CQC-KEY-HERE" > .env
+uv run signals setup
 ```
-```
-echo "COMPANIES_HOUSE_API_KEY=PASTE-CH-KEY-HERE" >> .env
-```
-Check the file. This shows only the names, never the keys:
-```
-cut -d= -f1 .env
-```
-It should print exactly `CQC_API_KEY` and `COMPANIES_HOUSE_API_KEY`. Never share the `.env` file or paste
-your keys anywhere else.
+It creates `~/Signals` and asks for each key. Copy the key, paste it and press Enter. **Nothing appears on screen
+while you paste; that's normal.** The keys are saved in `~/Signals/keys.env`, which only you can read. Never share
+that file or paste your keys anywhere else.
 
 **Step 7: check both APIs work:**
 ```
@@ -94,7 +99,7 @@ Then run it, keeping the Mac awake while it works:
 caffeinate -i uv run signals backfill --days 90
 ```
 Type `y` when asked. If it stops partway (sleep, Wi-Fi), run the same command again: it carries on from where
-it stopped. The database is the file `data/signals.db`. Keep it, and don't delete the folder.
+it stopped. The database is saved in `~/Signals/data/`. You only ever need to do this once.
 
 ---
 
@@ -110,11 +115,11 @@ This does three things:
 
 It prints where it saved each one. To open the London digest, for example:
 ```
-open outputs/care/2026-09-20/london/digest.html
+open ~/Signals/outputs/care/2026-09-20/london/digest.html
 ```
-(Use the date it printed, which is the Sunday the week ended.)
+(Use the date it printed, which is the Sunday the week ended.) In Finder: **Go → Home → Signals → outputs → care**.
 
-Each region's folder `outputs/care/<week>/<region>/` contains:
+Each region's folder `~/Signals/outputs/care/<week>/<region>/` contains:
 
 | File | What it is |
 |---|---|
@@ -138,7 +143,7 @@ Other useful forms:
 
 ## 3. Run it automatically every week
 
-Make sure the project folder is in your **home folder** (see setup step 2). Open Terminal in the folder and run:
+Make sure the code folder is in your **home folder** (see setup step 2). Open Terminal in the code folder and run:
 ```
 uv run signals schedule
 ```
@@ -148,7 +153,7 @@ to switch the job on. For another time, use for example `uv run signals schedule
 - If the Mac is **asleep** at that time, the job runs as soon as it wakes. If it is **switched off**, that week is
   skipped. Run `uv run signals run --weeks 2` to catch up.
 - Each run also deletes data older than 12 months (`signals purge`).
-- Everything is logged to `logs/weekly.log`.
+- Everything is logged to `~/Signals/logs/weekly.log`.
 - To switch it off, run the `launchctl unload -w …` command that `schedule` printed.
 
 On a Linux server, `uv run signals schedule` prints a line to add with `crontab -e` instead.
@@ -157,9 +162,9 @@ On a Linux server, `uv run signals schedule` prints a line to add with `crontab 
 
 ## 4. Your customer regions
 
-Regions live in `config/signals.yaml`. To open it:
+Regions live in `~/Signals/signals.yaml`. To open it:
 ```
-open -e config/signals.yaml
+open -e ~/Signals/signals.yaml
 ```
 Each region gets its own digest. A region can use any mix of the settings below; a lead is included if it
 matches **any** of them.
@@ -211,13 +216,22 @@ uv run signals suppress 1-123456789 --note "asked not to be contacted, 1 Oct 202
 
 ## 6. Updating to a new version
 
-1. Download the new ZIP and unzip it.
-2. Open the **new** folder, press **Cmd + A** then **Cmd + C**.
-3. Open your **existing** project folder and press **Cmd + V**. Tick **Apply to All**, then click **Replace**.
-   - This keeps your database (`data/`), keys (`.env`), outputs and logs, because they aren't in the download.
-   - It does overwrite `config/signals.yaml`. If you changed your regions, copy that file somewhere safe first
-     and put it back afterwards.
-4. In Terminal, in the project folder, run: `uv sync`
+Your keys, settings, database and digests are in `~/Signals`, so updating only replaces the code:
+
+1. Drag your old **code folder** to the Bin. Don't touch the `Signals` folder.
+2. Download the new ZIP, unzip it, and move the folder into your home folder, exactly where the old one was.
+   Keep the same name, so the weekly schedule still finds it.
+3. Open Terminal in the new code folder (right-click it, then **New Terminal at Folder**) and run:
+   ```
+   uv sync
+   ```
+   ```
+   uv run signals setup
+   ```
+   `setup` just checks that everything is in place. It asks for nothing if your keys are already saved.
+
+**Coming from an older version** that kept `data/` and `.env` inside the code folder? Run `uv run signals setup` in
+that old folder **before** deleting it. It moves your database, digests and keys into `~/Signals` for you.
 
 ---
 
@@ -227,11 +241,12 @@ uv run signals suppress 1-123456789 --note "asked not to be contacted, 1 Oct 202
 |---|---|
 | `command not found: uv` | Quit Terminal fully (Cmd + Q), reopen it in the folder, and try again. If it still fails, repeat setup step 4. |
 | `No pyproject.toml found` | Terminal isn't in the project folder. Open it with **New Terminal at Folder**, and check that `ls` lists `pyproject.toml`. |
-| `CQC_API_KEY is not set` | The `.env` file is missing, is in another folder, or lacks the `NAME=` part. Redo setup step 6, then check with `cut -d= -f1 .env`. |
+| `CQC_API_KEY is not set` | Run `uv run signals keys` and paste your keys again. |
 | `returned HTTP 401` | The key is wrong or expired. Check you used the right key for each service, and the **Live** Companies House key. |
-| `no sync cursor yet: run signals backfill first` | Build the database first (setup step 8). |
+| `no sync cursor yet: run signals backfill first` | There's no database in `~/Signals/data/` yet. Build it first (setup step 8). |
 | Yellow `failure(s); re-run to retry them` | A few records couldn't be fetched (network or API hiccup). Run the same command again. |
-| The schedule never runs / `Operation not permitted` in `logs/weekly.log` | The folder is inside Downloads, Desktop or Documents. Move it to your home folder, then run `schedule` and `launchctl load -w …` again. |
+| The schedule never runs / `Operation not permitted` in `~/Signals/logs/weekly.log` | The code folder is inside Downloads, Desktop or Documents. Move it to your home folder, then run `schedule` and `launchctl load -w …` again. |
+| Nothing happens on the Monday after an update | The code folder's name or place changed. Open Terminal in it and run `uv run signals schedule` and the `launchctl load -w …` line again. |
 
 ---
 
@@ -241,6 +256,8 @@ All commands start with `uv run signals`. Add `--help` to any of them for detail
 
 | Command | What it does |
 |---|---|
+| `setup` | Create `~/Signals`, move data from an older version, ask for missing keys. Safe to re-run |
+| `keys` | Save or change your API keys (press Enter to keep a saved one) |
 | `smoke --n 5` | Live check that both APIs and keys work |
 | `init` | Create the database (optional: other commands do it) |
 | `backfill [--dry-run] [--days 90] [--only-new]` | Build the baseline for your regions. Prints an estimate and asks before fetching |

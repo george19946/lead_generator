@@ -100,6 +100,109 @@ def _echo_counts(store: Store) -> None:
     typer.echo("Database now holds: " + ", ".join(f"{k} {v:,}" for k, v in store.counts().items()))
 
 
+KEY_HELP = {
+    "CQC_API_KEY": "CQC API key (api-portal.service.cqc.org.uk, Profile, primary key)",
+    "COMPANIES_HOUSE_API_KEY": "Companies House API key (developer.company-information.service.gov.uk, "
+                               "Your applications, Live, REST key)",
+}
+
+
+def _stored_keys() -> dict[str, str]:
+    from signals.settings import keys_path
+
+    path = keys_path()
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(errors="replace").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            name, value = line.split("=", 1)
+            if value.strip():
+                out[name.strip()] = value.strip()
+    return out
+
+
+def _ask_keys(names: tuple[str, ...]) -> None:
+    from signals.settings import write_keys
+
+    stored = _stored_keys()
+    typer.echo("Paste each key and press Enter. Nothing appears on screen while you paste: that's normal.")
+    values = {}
+    for name in names:
+        keep = " (press Enter to keep the one saved)" if name in stored else ""
+        while True:
+            value = typer.prompt(f"{KEY_HELP.get(name, name)}{keep}", default="", show_default=False,
+                                 hide_input=True).strip()
+            if not value and name in stored:
+                value = stored[name]
+            if value and not re.search(r"[\s=\"']", value):
+                break
+            typer.secho("That doesn't look like a key (it's empty or has spaces or quotes). Please paste it again.",
+                        fg="yellow")
+        values[name] = value
+    path = write_keys(values)
+    typer.secho(f"Saved to {path} (only you can read it).", fg="green")
+
+
+@app.command()
+def keys() -> None:
+    """Save your API keys in ~/Signals/keys.env. Asks for each one; press Enter to keep a saved key."""
+    from signals.settings import KEY_NAMES
+
+    _ask_keys(KEY_NAMES)
+    typer.echo("Check they work with:  uv run signals smoke --n 5")
+
+
+@app.command()
+def setup(
+    ask_keys: Annotated[bool, typer.Option("--keys/--no-keys", help="Ask for any missing API keys")] = True,
+) -> None:
+    """First-time setup, safe to re-run. Run it from the code folder.
+
+    Creates your Signals folder (~/Signals), which holds everything that is yours: keys, config (regions),
+    database, digests and logs. Updating the code never touches it. Also moves these over from this folder if
+    an older version kept them here, and asks for any missing API key.
+    """
+    import shutil
+
+    from signals.settings import CONFIG_FILE, DEFAULT_CONFIG_PATH, KEY_NAMES, data_home, keys_path
+
+    home = data_home()
+    project = Path.cwd()
+    home.mkdir(parents=True, exist_ok=True)
+    done = []
+    if not (home / CONFIG_FILE).exists() and (project / DEFAULT_CONFIG_PATH).exists():
+        shutil.copy2(project / DEFAULT_CONFIG_PATH, home / CONFIG_FILE)
+        done.append(f"copied the config to {home / CONFIG_FILE}")
+    if not keys_path().exists() and (project / ".env").exists():
+        shutil.copy2(project / ".env", keys_path())
+        keys_path().chmod(0o600)
+        done.append(f"copied your keys from {project / '.env'} to {keys_path()}")
+    for name in ("data", "outputs", "logs"):
+        old, new = project / name, home / name
+        if old.resolve() == new.resolve() or not old.is_dir() or not any(old.iterdir()):
+            continue
+        if new.exists() and any(new.iterdir()):
+            typer.secho(f"Both {old} and {new} exist: left {old} where it is. Keep whichever is newer.", fg="yellow")
+            continue
+        if new.exists():
+            new.rmdir()
+        shutil.move(str(old), str(new))
+        done.append(f"moved {old} to {new}")
+    typer.secho(f"Your Signals folder: {home}", fg="green", bold=True)
+    for line in done:
+        typer.echo(f"  - {line}")
+    missing = tuple(name for name in KEY_NAMES if name not in _stored_keys())
+    if missing and ask_keys:
+        _ask_keys(missing)
+    elif missing:
+        typer.echo("Next, add your API keys:  uv run signals keys")
+    typer.echo(
+        "\nEverything that is yours now lives in that folder. To update the code later, delete the code folder and "
+        "unzip the new version in its place: your data stays put."
+    )
+
+
 @app.command()
 def init(config: ConfigOption = None) -> None:
     """Create the SQLite database (safe to re-run)."""
@@ -417,31 +520,35 @@ def schedule(
     if not uv:
         typer.secho("Couldn't find uv. Install it first (see README).", fg="red", err=True)
         raise typer.Exit(2)
-    (project / "logs").mkdir(exist_ok=True)
+    from signals.settings import data_home
+
+    log = data_home() / "logs" / "weekly.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
     home = Path.home()
     when = f"every {day.title()} at {hour:02d}:{minute:02d}"
 
     if platform.system() != "Darwin":
         typer.echo(f"Add this line with `crontab -e` to run {when}:\n")
-        typer.echo(cron_line(project, uv, day, hour, minute))
+        typer.echo(cron_line(project, uv, day, hour, minute, log))
         return
 
-    folder = protected_folder(project, home)
-    if folder:
-        typer.secho(
-            f"Warning: the project is inside your {folder} folder. macOS blocks background jobs from reading it.\n"
-            f"Move the whole project folder into your home folder ({home}) first, open Terminal there, and run "
-            "this command again.", fg="yellow",
-        )
-        raise typer.Exit(1)
+    for what, where in (("code folder", project), ("Signals folder", data_home())):
+        folder = protected_folder(where, home)
+        if folder:
+            typer.secho(
+                f"Warning: your {what} ({where}) is inside your {folder} folder, which macOS blocks background "
+                f"jobs from reading.\nMove it into your home folder ({home}) first, open Terminal in the code "
+                "folder, and run this command again.", fg="yellow",
+            )
+            raise typer.Exit(1)
     path = plist_path(home)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(launchd_plist(project, uv, day, hour, minute))
+    path.write_bytes(launchd_plist(project, uv, day, hour, minute, log))
     typer.secho(f"Wrote {path}", fg="green")
     typer.echo(f"It will run {when} (or as soon as the Mac wakes, if it was asleep). To switch it on, run:\n")
     typer.echo(f"    launchctl load -w {shlex.quote(str(path))}\n")
     typer.echo(f"To switch it off later: launchctl unload -w {shlex.quote(str(path))}")
-    typer.echo(f"Each run is logged to {project / 'logs' / 'weekly.log'}")
+    typer.echo(f"Each run is logged to {log}")
 
 
 if __name__ == "__main__":

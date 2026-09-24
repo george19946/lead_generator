@@ -13,19 +13,20 @@ PROJECT = Path("/Users/sam/lead generator")
 
 
 def test_launchd_plist():
-    plist = plistlib.loads(launchd_plist(PROJECT, "/Users/sam/.local/bin/uv", "monday", 7, 30))
+    log = Path("/Users/sam/Signals/logs/weekly.log")
+    plist = plistlib.loads(launchd_plist(PROJECT, "/Users/sam/.local/bin/uv", "monday", 7, 30, log))
     assert plist["Label"] == "com.signals.weekly"
     assert plist["StartCalendarInterval"] == {"Weekday": 1, "Hour": 7, "Minute": 30}
     command = plist["ProgramArguments"][2]
     assert command == ("cd '/Users/sam/lead generator' && /Users/sam/.local/bin/uv run signals run"
                        " && /Users/sam/.local/bin/uv run signals purge")
-    assert plist["StandardOutPath"] == "/Users/sam/lead generator/logs/weekly.log"
+    assert plist["StandardOutPath"] == "/Users/sam/Signals/logs/weekly.log"
 
 
 def test_cron_line():
-    line = cron_line(Path("/srv/signals"), "/usr/local/bin/uv", "sunday", 6, 0)
+    line = cron_line(Path("/srv/signals"), "/usr/local/bin/uv", "sunday", 6, 0, Path("/srv/data/logs/weekly.log"))
     assert line.startswith("0 6 * * 0 (cd /srv/signals && /usr/local/bin/uv run signals run")
-    assert line.endswith(">> /srv/signals/logs/weekly.log 2>&1")
+    assert line.endswith(">> /srv/data/logs/weekly.log 2>&1")
 
 
 def test_protected_folder():
@@ -50,7 +51,7 @@ def test_schedule_command_on_a_mac(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     path = home / "Library" / "LaunchAgents" / "com.signals.weekly.plist"
     assert plistlib.loads(path.read_bytes())["StartCalendarInterval"]["Weekday"] == 2
-    assert "launchctl load -w" in result.output and (tmp_path / "logs").is_dir()
+    assert "launchctl load -w" in result.output and (tmp_path / "logs").is_dir()  # tmp_path is the data home
 
 
 def test_schedule_refuses_protected_folder(tmp_path, monkeypatch):
@@ -98,3 +99,13 @@ def test_suppress_command(tmp_path):
     assert "1 on the opt-out list" in listing and "asked by email" in listing
     assert "removed" in runner.invoke(app, ["suppress", "1-101", "--remove", *cfg]).output
     assert "0 on the opt-out list" in runner.invoke(app, ["suppress", *cfg]).output
+
+
+def test_schedule_refuses_data_home_in_protected_folder(tmp_path, monkeypatch):
+    _project(tmp_path)
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("SIGNALS_HOME", str(tmp_path / "Documents" / "Signals"))
+    monkeypatch.setenv("UV", "/opt/uv")
+    result = runner.invoke(app, ["schedule"])
+    assert result.exit_code == 1 and "Signals folder" in result.output

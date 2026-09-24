@@ -39,10 +39,11 @@ def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(autouse=True)
 def _isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Keep a developer's real .env and keys out of tests."""
+    """Keep a developer's real keys, config and ~/Signals out of tests: the data home is the test's tmp dir."""
     monkeypatch.delenv("CQC_API_KEY", raising=False)
     monkeypatch.delenv("COMPANIES_HOUSE_API_KEY", raising=False)
     monkeypatch.delenv("SIGNALS_CONFIG", raising=False)
+    monkeypatch.setenv("SIGNALS_HOME", str(tmp_path))
     monkeypatch.chdir(tmp_path)
 
 

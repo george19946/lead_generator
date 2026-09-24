@@ -1,5 +1,27 @@
 # Progress
 
+## Data home: user data kept apart from the code (2026-09-24)
+- **Problem:** the user updated by pasting the new code over the old folder and lost `.env` and `data/`, so had to
+  re-enter the keys and backfill again. The update method (and a hidden `.env` inside the code folder) was fragile.
+- **Fix:** everything that is the user's now lives in a **data home**, `~/Signals` (or `$SIGNALS_HOME`):
+  `keys.env`, `signals.yaml`, `data/`, `outputs/` and `logs/`. The code folder is disposable, so updating means
+  deleting it and unzipping the new version in its place.
+  - Relative config paths resolve against the data home.
+  - Config lookup: `$SIGNALS_CONFIG`, then `~/Signals/signals.yaml`, then the template `config/signals.yaml`.
+  - Keys: environment variables win, then `~/Signals/keys.env`, then a local `.env` (kept for development).
+- **`signals setup`** (safe to re-run):
+  - creates `~/Signals` and copies the config template there;
+  - copies an old `.env` to `keys.env` (mode 600);
+  - moves `data/`, `outputs/` and `logs/` out of the code folder (leaving both in place if both exist);
+  - asks for any missing key.
+- **`signals keys`**: hidden prompts, rejects values with spaces, quotes or `=`, and Enter keeps a saved key.
+- The missing-key error now names `~/Signals/keys.env` and says to run `signals keys`, listing key names only.
+- `schedule` logs to `~/Signals/logs/weekly.log`, and refuses to schedule if the code folder or data home is in a
+  macOS-protected folder.
+- Rehearsed end to end: old layout, then `setup`, then delete the code folder, fresh copy, `uv sync`, `run`.
+  Keys, database and regions were all found, and the digest was written to `~/Signals/outputs`.
+- README (setup step 6, updating, paths, troubleshooting), PRIVACY_NOTES §2 and `.env.example` updated. 186 tests.
+
 ## Milestone 5: README, scheduling, opt-outs, retention, final privacy notes (done)
 - **README.md**, a beginner user guide for the Mac:
   - setup from the ZIP (move to the home folder, New Terminal at Folder, uv, `.env` with a check command, smoke, backfill);
