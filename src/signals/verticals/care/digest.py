@@ -557,12 +557,70 @@ def sample_leads(
     return _region_leads(Selection.for_region(region, region_config, vertical), leads, vertical, end)
 
 
+TEASER_EXAMPLES = 3
+ORGANISATION_FORMS = {"limited company", "LLP", "other corporate body", "public body"}
+
+
+def _organisations(rows: list[dict]) -> list[dict]:
+    """Only rows about organisations: a sales email must never name a sole trader or partnership."""
+    return [r for r in rows if r.get("legal_form") in ORGANISATION_FORMS]
+
+
+def _where(row: dict) -> str:
+    return f"{row.get('location_name')} ({row.get('local_authority') or row.get('postcode') or 'area unknown'})"
+
+
+def email_teaser(leads: RegionLeads, weeks: list[Week]) -> str:
+    """Numbers and real examples for a sales email about one region: proof that there's a tool behind it."""
+    start, end = weeks[0].start, weeks[-1].ending
+    name = region_label(leads.region)
+    due = leads.due_for_inspection_all
+    unrated = sum(1 for r in due if r.get("rating") is None)
+    longest = sorted(_organisations(due), key=lambda r: (r.get("provider_group") != INDEPENDENT, r.get("due_since") or ""))
+    poor = _sort_poor(_organisations(leads.poor_ratings))
+    lines = [
+        f"Numbers and examples for emails about {name} (from the CQC and Companies House registers, "
+        f"{start:%d %b} to {end:%d %b %Y}).",
+        "Every example below is an organisation, never a sole trader. Check the numbers are current before sending.",
+        "",
+        f"Due for inspection now: {len(due):,} services",
+        f"  - {len(due) - unrated:,} last rated 4 or more years ago",
+        f"  - {unrated:,} never inspected, a year or more after registering",
+        f"Last {len(weeks)} weeks: {len(leads.poor_ratings):,} new poor ratings, {len(leads.never_inspected):,} newly "
+        f"registered services, {len(leads.new_companies):,} new care companies",
+        "",
+        "Longest waiting (independents first):",
+        *[f"  - {_where(r)}: {r.get('due_reason')}, {r.get('years_waiting')} years ago"
+          for r in longest[:TEASER_EXAMPLES]],
+    ]
+    if poor:
+        lines += ["", "Recent poor ratings:"]
+        lines += [
+            f"  - {_where(r)}: {r.get('rating')} on {r.get('rating_date') or 'a recent date'}"
+            + (f", was {r['previous_rating']}" if r.get("previous_rating") else "")
+            for r in poor[:TEASER_EXAMPLES]
+        ]
+    if longest:
+        first = longest[0]
+        lines += [
+            "",
+            "A ready-made sentence:",
+            f"  In {name} right now, {len(due):,} care services have a CQC rating that is 4 or more years old, or have "
+            f"waited over a year for their first inspection. For example, {first.get('location_name')} in "
+            f"{first.get('local_authority') or 'your area'}: {first.get('due_reason')}.",
+        ]
+    return "\n".join(lines) + "\n"
+
+
 def write_sample(
     vertical: CareVertical, weeks: list[Week], region: str, region_config: RegionConfig | None, outputs_dir: Path
 ) -> Path:
-    """A preview digest for one region over several weeks (see sample_leads)."""
+    """A preview digest for one region over several weeks (see sample_leads), plus email-teaser.txt."""
     start, end = weeks[0].start, weeks[-1].ending
     folder = outputs_dir / "samples" / vertical.name / f"{region}_{start}_to_{end}"
     subtitle = f"Sample: {len(weeks)} week{'s' if len(weeks) > 1 else ''}, {start:%a %d %b} to {end:%a %d %b %Y}"
-    return write_region(folder, sample_leads(vertical, weeks, region, region_config),
-                        heading=f"Care leads: {region_label(region)}", subtitle=subtitle, week_ending=end)
+    leads = sample_leads(vertical, weeks, region, region_config)
+    path = write_region(folder, leads, heading=f"Care leads: {region_label(region)}", subtitle=subtitle,
+                        week_ending=end)
+    (folder / "email-teaser.txt").write_text(email_teaser(leads, weeks), encoding="utf-8")
+    return path

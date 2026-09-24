@@ -1,5 +1,26 @@
 # Progress
 
+## £0 interest test: companies-only mode, email teaser, prospects (2026-09-24)
+- **Why:** the user won't spend the ~£70 of the 8-week plan before seeing interest. Everything needed for a first
+  test is now free.
+- **Companies-only mode** (`AppConfig.companies_only`, default **true**; `verticals/care/policy.py`):
+  - on every CLI store open and close, stored sole-trader and partnership providers are erased (with their
+    locations and leads) and blocked through the suppressed table, with a note of their own;
+  - turning the mode off lifts only those rows, never real opt-outs, and prints the backfill command;
+  - the privacy notice and FAQ adapt to the mode, and `business.missing()` no longer requires an address.
+  - It costs ~1–2% of leads: 2 of 133 providers in the test boroughs.
+- **`email-teaser.txt`**, written by `signals sample`: live counts, the longest-waiting due services (independents
+  first) and recent poor ratings, **organisations only**, plus a ready-made sentence.
+- **`signals prospects [--region]`**: CH advanced search by name phrase (company_type limited to ltd/llp/plc/guarantee,
+  so emailing is allowed under PECR).
+  - A name must contain a care word and a consultancy word; obvious non-care names are dropped.
+  - Rows are sorted in-region first, then newest. Columns to fill: approved/email/first_name/website/notes.
+  - Live: 594 prospects (144 in London) from 11 requests.
+  - `CompaniesHouseClient.search_by_name` added.
+- `business/zero-cost-test.md`: the £0 plan (free Gmail, Netlify subdomain, Claude-drafted Gmail drafts, manual
+  Monday digests), emails, decision gates, and every free option considered. The 8-week plan is now phase 2.
+- 201 tests.
+
 ## Stress test follow-ups: due-for-inspection list, group filter, area limits (2026-09-24)
 - **Why:** the viability stress test found weekly volumes thin (London: about 3 poor ratings and 5 new registrations a
   week), many "hot" leads belonging to big groups, and the same leads going to every customer.

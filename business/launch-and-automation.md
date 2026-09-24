@@ -1,6 +1,7 @@
 # Launch checklist and automation plan
 
-> **Start with `8-week-trial-plan.md`**: it is the cheapest, lowest-effort version of this checklist, with dates.
+> **Start with `zero-cost-test.md`** (£0), then `8-week-trial-plan.md` if it shows interest. This checklist is the
+> full version for once you're selling.
 
 ## Part 1: launch checklist (in this order)
 

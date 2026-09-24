@@ -14,15 +14,21 @@
 
   <h2>Who we are</h2>
   <p>{{ b.brand }} is run by {{ or_todo(b.legal_name, "your legal name") }}{% if b.company_number %}, company number
-    {{ b.company_number }}{% endif %}, {{ or_todo(b.address, "your postal address") }}. We are the controller of the
+    {{ b.company_number }}{% endif %}{% if b.address %}, {{ b.address }}{% endif %}. We are the controller of the
     personal data described here. Contact us at {{ mailto(b, "Privacy question", b.email or "our email address") }}{% if b.phone %}
     or {{ b.phone }}{% endif %}.{% if b.ico_registration %} We are registered with the Information Commissioner's Office
     (registration {{ b.ico_registration }}).{% endif %}</p>
 
   <h2>Whose information this is about</h2>
+  {% if d.companies_only %}
+  <p>Our lists are about <strong>organisations only</strong>: care providers and companies. We deliberately leave out
+    sole traders and partnerships, whose business details would identify a person. This notice also covers people
+    who contact us, and the people we contact about our own service (see below).</p>
+  {% else %}
   <p>Mostly organisations: care providers and companies. Some care providers are <strong>sole traders or
     partnerships</strong>, whose business name, address and phone number identify a person. This notice is mainly for
     them. It also covers people who contact us, and our customers' contacts.</p>
+  {% endif %}
 
   <h2>What we collect, and where from</h2>
   <ul>
@@ -52,6 +58,12 @@
     every lead with the contact rule that applies (for example, sole traders may not be sent unsolicited marketing
     emails), and require customers to pass on any opt-out requests to us. Our computer and email providers process
     data for us under contract. We don't sell data to anyone else.</p>
+
+  <h2>If we emailed you about {{ b.brand }}</h2>
+  <p>We found your business email address on your organisation's website or another public business listing. We
+    use it only to tell you about {{ b.brand }} and to reply to you, on the basis of our legitimate interest in
+    offering a relevant business service. Reply "no thanks" and we won't contact you again; we keep only a note of
+    your address so that we never do.</p>
 
   <h2>How long we keep it</h2>
   <p>Twelve months. Older records, lists and reports are deleted automatically each week. If you opt out, we keep only

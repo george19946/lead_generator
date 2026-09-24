@@ -6,6 +6,7 @@ outputs_dir: outputs
 # Data protection
 retention_days: 365            # `signals purge` default
 include_personal_names: false  # registered manager / nominated individual names (personal data)
+companies_only: true           # leave out sole traders and partnerships entirely (their details identify people)
 
 sources:
   cqc:

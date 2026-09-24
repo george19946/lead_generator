@@ -324,7 +324,16 @@ The `business/` folder in the code holds:
 - short **customer terms**;
 - **sales outreach templates**;
 - a **launch checklist and automation plan** (`business/launch-and-automation.md`);
-- the **8-week trial plan** (`business/8-week-trial-plan.md`): start here.
+- the **£0 interest test** (`business/zero-cost-test.md`): **start here**;
+- the **8-week trial plan** (`business/8-week-trial-plan.md`): the next step, once the £0 test shows interest.
+
+**Finding prospects:** `uv run signals prospects --region london` writes a list of CQC consultancies (companies and LLPs
+only, so you may email them) to `~/Signals/prospects/`. **Email numbers:** every `uv run signals sample` also writes
+`email-teaser.txt`: live numbers and real examples for that area, ready to paste into an email.
+
+**Companies-only mode** (`companies_only: true` in `signals.yaml`, on by default) keeps no sole traders or
+partnerships at all, so the leads contain no personal data. To include them (only after paying the ICO data
+protection fee), set it to `false` and run `uv run signals backfill --only-new`.
 
 To build your website and sales sheet:
 1. Fill in `~/Signals/business.yaml` (`open -e ~/Signals/business.yaml`). `places_per_area` (default 2) and

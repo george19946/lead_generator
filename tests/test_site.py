@@ -61,7 +61,7 @@ def test_missing_details_are_highlighted(tmp_path):
     privacy = (tmp_path / "privacy.html").read_text()
     assert 'class="todo"' in privacy and "your legal name" in privacy
     assert "Live from the registers" not in (tmp_path / "index.html").read_text()  # no numbers without data
-    assert BusinessConfig().missing() == ["legal_name", "address", "email"]
+    assert BusinessConfig().missing() == ["legal_name", "email"]
 
 
 def test_site_command(tmp_path):
@@ -71,5 +71,5 @@ def test_site_command(tmp_path):
     result = runner.invoke(app, ["site"])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "site" / "index.html").exists()
-    assert "legal_name, address" in result.output and "No database yet" in result.output
+    assert "Before publishing, fill in legal_name" in result.output and "No database yet" in result.output
     assert runner.invoke(app, ["site", "--region", "atlantis"]).exit_code != 0

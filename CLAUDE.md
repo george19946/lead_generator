@@ -27,6 +27,7 @@ uv run signals purge --older-than 365d   # DB data and output folders past reten
 uv run signals suppress ID --note "..."  # opt-out: erase + never store/list again (no ID: list; --remove)
 uv run signals schedule                  # macOS launchd weekly job (prints the launchctl command); cron elsewhere
 uv run signals site                      # website + sales sheet into ~/Signals/site from business.yaml + live data
+uv run signals prospects --region london # CQC consultancies (companies/LLPs) from Companies House -> ~/Signals/prospects/
 ```
 
 ## Layout
@@ -40,7 +41,8 @@ uv run signals site                      # website + sales sheet into ~/Signals/
   re-checks formation-agent companies. `README.md` is the user guide (beginner, Mac); `PRIVACY_NOTES.md` is final.
 - `src/signals/site/`: static business website (index, sample, privacy notice, opt-out, sales sheet); examples are
   anonymised (masked names, postcode district, no sole traders). `config/business.yaml`: template for business details.
-- `business/`: LIA, customer terms, outreach templates, launch & automation plan, 8-week trial plan (for the user, not code).
+- `business/`: LIA, customer terms, outreach templates, launch & automation plan, £0 interest test (do first), 8-week trial plan (for the user,
+  not code).
 - `config/signals.yaml`: the config **template**; `setup` copies it to `~/Signals/signals.yaml`, which is the one used.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
 
@@ -66,6 +68,12 @@ uv run signals site                      # website + sales sheet into ~/Signals/
   "independent" = one location ever (`locationIds` also lists closed ones); else "multi-site". Location leads from
   large groups are left out of digests unless the region sets `include_large_groups`. Labels are re-derived at
   render time, like the company flags.
+- **Companies-only mode** (`companies_only`, default true): every CLI store open/close erases stored sole-trader and
+  partnership providers (and their locations/leads) and blocks them via the suppressed table with
+  `policy.COMPANIES_ONLY_NOTE`; turning it off lifts only those rows. So leads hold no personal data (no ICO fee needed
+  for the £0 test; see business/zero-cost-test.md).
+- `signals sample` also writes `email-teaser.txt` (numbers + organisation-only examples for sales emails).
+  `signals prospects`: CH name search (company/LLP types only), names must contain a care word AND a consultancy word.
 - Area limits (`places_per_area`, `exclusive_price` in business.yaml) are a sales policy shown on the site; nothing
   enforces them yet.
 - A lead is recorded once, for the week whose window (the week + 14 days' grace) holds its event date (core/runner.py).

@@ -63,6 +63,7 @@ class SiteData:
     examples: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     never_inspected_total: int = 0
     due_total: int = 0
+    companies_only: bool = True  # the leads hold no sole traders or partnerships (config companies_only)
 
     @property
     def region_name(self) -> str:
@@ -163,8 +164,10 @@ def anonymise(leads: RegionLeads) -> dict[str, list[dict[str, Any]]]:
     }
 
 
-def site_data(business: BusinessConfig, region: str, weeks: list[Week], leads: RegionLeads | None) -> SiteData:
-    data = SiteData(business=business, region=region, weeks=weeks)
+def site_data(
+    business: BusinessConfig, region: str, weeks: list[Week], leads: RegionLeads | None, *, companies_only: bool = True
+) -> SiteData:
+    data = SiteData(business=business, region=region, weeks=weeks, companies_only=companies_only)
     if leads is not None:
         data.counts = {
             "poor_ratings": len(leads.poor_ratings),

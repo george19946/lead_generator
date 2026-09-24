@@ -6,6 +6,8 @@ import logging
 import re
 import shlex
 from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
@@ -70,10 +72,31 @@ def smoke(
     typer.secho("\nSmoke test OK", fg="green")
 
 
-def _open_store(settings: Settings) -> Store:
+@contextmanager
+def _open_store(settings: Settings) -> Iterator[Store]:
+    """Open the database, applying the companies-only setting before and after the command's work."""
     from signals.db.store import Store
 
-    return Store.open(settings.config.database)
+    with Store.open(settings.config.database) as store:
+        _apply_data_policy(store, settings)
+        yield store
+        _apply_data_policy(store, settings)
+
+
+def _apply_data_policy(store: Store, settings: Settings) -> None:
+    from signals.core.clock import utcnow
+    from signals.verticals.care.policy import apply_companies_only, lift_companies_only
+
+    if settings.config.companies_only:
+        removed = apply_companies_only(store, utcnow())
+        if removed:
+            typer.echo(f"Companies-only mode: removed {removed:,} sole traders and partnerships (and their services).")
+    elif lifted := lift_companies_only(store):
+        typer.secho(
+            f"Sole traders and partnerships are included again ({lifted:,}). Fetch them with:  "
+            "uv run signals backfill --only-new",
+            fg="yellow",
+        )
 
 
 def _make_sources(settings: Settings) -> tuple[CqcSource, CompaniesHouseSource]:
@@ -472,7 +495,8 @@ def site(
         with _open_store(settings) as store:
             leads = sample_leads(CareVertical(store, CareScope(regions)), period, region, regions.get(region))
     folder = data_home() / "site"
-    build_site(site_data(business, region, period, leads), folder, today=utcnow().date())
+    build_site(site_data(business, region, period, leads, companies_only=settings.config.companies_only), folder,
+               today=utcnow().date())
     typer.secho(f"Website built in {folder}", fg="green")
     typer.echo(f"  Look at it:        open {shlex.quote(str(folder / 'index.html'))}")
     typer.echo(f"  Sales sheet (PDF): open {shlex.quote(str(folder / 'sales-sheet.html'))}  then File, Print, Save as PDF")
@@ -485,6 +509,56 @@ def site(
             "notice must say who you are and how to reach you. Highlighted [brackets] mark the gaps.",
             fg="yellow",
         )
+
+
+@app.command()
+def prospects(
+    region: Annotated[str | None, typer.Option(help="Only prospects in this customer region")] = None,
+    config: ConfigOption = None,
+) -> None:
+    """List CQC compliance consultancies (companies and LLPs) from Companies House, as a CSV to fill in.
+
+    Free: about a dozen Companies House searches. Add each one's website and published business email, put "yes" in
+    the approved column for the ones to contact, and email only those.
+    """
+    from signals.core.clock import utcnow
+    from signals.settings import data_home
+    from signals.sources.companies_house.client import CompaniesHouseClient
+    from signals.verticals.care.collect import CareScope
+    from signals.verticals.care.feeds import CareData
+    from signals.verticals.care.prospects import build_rows, search, write_prospects
+
+    settings = Settings.load(config)
+    regions = settings.config.regions
+    if region and region not in regions:
+        raise typer.BadParameter(f"unknown region {region!r}; configured regions: {', '.join(regions) or 'none'}")
+    try:
+        ch = CompaniesHouseClient.from_settings(settings)
+    except MissingSecretError as exc:
+        typer.secho(str(exc), fg="red", err=True)
+        raise typer.Exit(2) from exc
+    typer.echo("Searching Companies House for consultancy names...")
+    try:
+        companies, requests = search(ch)
+    finally:
+        ch.close()
+    scope = CareScope(regions)
+    if settings.config.database.exists():
+        with _open_store(settings) as store:
+            postcodes = CareData(store, scope).postcodes
+    else:
+        from signals.core.regions import PostcodeLookup
+
+        postcodes = PostcodeLookup()
+    rows, skipped = build_rows(companies, postcodes, scope, region)
+    path = write_prospects(data_home() / "prospects" / f"prospects-{utcnow().date()}.csv", rows)
+    per_region = Counter(r["inferred_region"] or "unknown" for r in rows)
+    typer.secho(f"{len(rows):,} prospects written to {path}", fg="green")
+    typer.echo("  By CQC region: " + ", ".join(f"{k} {v}" for k, v in per_region.most_common()))
+    typer.echo(f"  Left out {skipped:,} that look like something else (visa, dental, holdings...). "
+               f"Companies House requests: {requests}.")
+    typer.echo("  Next: fill in website, email and first_name, and put yes under approved for the ones to email.")
+    typer.echo(f"  Open it:  open {shlex.quote(str(path))}")
 
 
 def parse_age(text: str) -> timedelta:

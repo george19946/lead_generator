@@ -68,6 +68,17 @@ class CompaniesHouseClient:
         # Advanced search answers 404 when nothing matches.
         return self.api.get_json("advanced-search/companies", params, not_found_ok=True) or {}
 
+    def search_by_name(
+        self, name_includes: str, *, company_types: Sequence[str] = (), status: str = "active",
+        size: int = MAX_PAGE_SIZE, start_index: int = 0,
+    ) -> dict:
+        """Advanced search on a phrase in the company name (e.g. prospects: "care consultancy")."""
+        params: dict[str, object] = {"company_name_includes": name_includes, "company_status": status,
+                                     "size": size, "start_index": start_index}
+        if company_types:
+            params["company_type"] = ",".join(company_types)
+        return self.api.get_json("advanced-search/companies", params, not_found_ok=True) or {}
+
     def get_company(self, company_number: str) -> dict | None:
         """The company profile (current registered office, status...), or None if not found."""
         return self.api.get_json(f"company/{company_number}", not_found_ok=True)

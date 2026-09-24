@@ -1,5 +1,9 @@
 # 8-week trial plan: does anyone pay for this?
 
+> **Phase 2. Do `zero-cost-test.md` first.** This plan spends about £70, so use it only once the £0 test shows
+> interest. If you stay in companies-only mode, you can probably drop the ICO fee from the budget below (check with
+> the ICO's free self-assessment).
+
 **Dates:** set up Thu 24 Sep – Sun 4 Oct 2026, then 8 weeks from Mon 5 Oct to Sun 29 Nov. Decide on Mon 30 Nov.
 **Cash:** about £70. **Your time:** about 15 hours in total, most of it in the set-up week.
 **Everything runs by email.** You don't need calls, meetings, ads or LinkedIn.

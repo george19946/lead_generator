@@ -10,11 +10,14 @@ The leads are organisations, but some records identify living people:
 
 | Data | Source | Personal data? | What the tool does |
 |---|---|---|---|
-| Sole-trader and partnership providers: name, business address, phone | CQC | **Yes**, the provider name is a person's name | Stored and shown in leads (needed to use the lead). Removable on request (section 5). |
+| Sole-trader and partnership providers: name, business address, phone | CQC | **Yes**, the provider name is a person's name | **Companies-only mode (`companies_only: true`, the default): erased and never stored**, so the leads are organisations only. With the mode off: stored and shown in leads, removable on request (section 5). |
 | Registered managers, nominated individuals (`contacts`, `nominatedIndividual`, `person*` fields) | CQC | Yes | **Removed before anything is stored.** Kept only if `include_personal_names: true` is set in `config/signals.yaml` (off by default; don't switch it on without a documented reason). |
 | Company names, numbers, registered offices, SIC codes | Companies House | Usually not (a company name can contain a person's name) | Stored and shown. |
 | Company officers, directors, persons with significant control | Companies House | Yes | **Never fetched.** Directors' addresses are not used to place companies either. |
 | Care service names, addresses, phone numbers, websites, ratings | CQC | Not for organisations | Stored and shown. |
+
+In companies-only mode the remaining personal data is incidental (a company name or registered office can relate to
+a person), plus the prospects you contact about the service, which is processing for your own marketing.
 
 No special category data is processed. Ratings concern services, not individuals.
 

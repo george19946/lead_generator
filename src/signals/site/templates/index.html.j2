@@ -140,10 +140,16 @@
         spotting the changes that matter each week, linking companies to their CQC registrations, and working out the
         legal form and contact rule for each lead.</p></details>
     <details><summary>Is this legal under GDPR and PECR?</summary>
+      {% if d.companies_only %}
+      <p>The leads are organisations only, from registers published for transparency: we leave out sole traders and
+        partnerships entirely, and remove the names of registered managers and nominated individuals. Every lead is
+        labelled with the PECR contact rule, and opt-outs are honoured.</p>
+      {% else %}
       <p>The leads are organisations, from registers published for transparency. We remove the names of registered
         managers and nominated individuals, label every lead with the PECR contact rule, and honour opt-outs. Some
         providers are sole traders: treat their details as personal data, contact them only about relevant services,
-        and stop if asked.</p></details>
+        and stop if asked.</p>
+      {% endif %}</details>
     <details><summary>Couldn't I just search the CQC website?</summary>
       <p>You could, every week, for every service in your area, and compare the results with last week's. We do that
         for you, add new companies from Companies House, and follow up companies registered at formation agents until

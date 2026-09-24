@@ -84,6 +84,8 @@ class AppConfig(BaseModel):
     outputs_dir: Path = Path("outputs")
     retention_days: int = Field(default=365, gt=0)
     include_personal_names: bool = False
+    # Keep no sole traders or partnerships (their details identify people): the leads are organisations only.
+    companies_only: bool = True
     sources: SourcesConfig = SourcesConfig()
     regions: dict[str, RegionConfig] = {}
 
@@ -108,8 +110,8 @@ class BusinessConfig(BaseModel):
     showcase_region: str | None = None
 
     def missing(self) -> list[str]:
-        """Fields the privacy notice legally needs that are still empty."""
-        return [name for name in ("legal_name", "address", "email") if not getattr(self, name).strip()]
+        """Fields the privacy notice needs that are still empty: who you are and how to reach you."""
+        return [name for name in ("legal_name", "email") if not getattr(self, name).strip()]
 
 
 BUSINESS_FILE = "business.yaml"
