@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from functools import cached_property
 from pathlib import Path
 
@@ -88,5 +89,31 @@ class MissingSecretError(RuntimeError):
 
 def _require(value: SecretStr | None, name: str) -> str:
     if value is None or not value.get_secret_value().strip():
-        raise MissingSecretError(f"{name} is not set. Add it to .env (see .env.example) or the environment.")
+        raise MissingSecretError(_missing_message(name))
     return value.get_secret_value().strip()
+
+
+def _missing_message(name: str) -> str:
+    """Say which folder was searched and what was wrong, since the usual cause is being in the wrong folder."""
+    folder = Path.cwd()
+    env = folder / ".env"
+    if not env.exists():
+        hint = (
+            f"There is no .env file in {folder}.\n"
+            "If this isn't your project folder (the one containing your data folder), open Terminal there instead.\n"
+            "If it is, add your keys again (README, setup step 6)."
+        )
+    else:
+        lines = [line.strip() for line in env.read_text(errors="replace").splitlines()]
+        lines = [line for line in lines if line and not line.startswith("#")]
+        # Show variable names only: a line without NAME= may be a bare key, which must never be printed.
+        names = [line.split("=", 1)[0].strip() for line in lines if re.fullmatch(r"[A-Za-z_]\w*\s*=.*", line)]
+        other = len(lines) - len(names)
+        found = ", ".join(names) or "no NAME=value lines"
+        if other:
+            found += f", plus {other} line(s) without NAME= (not shown)"
+        hint = (
+            f"{env} has no line starting {name}= (it has: {found}).\n"
+            "Each line must look like NAME=key. Add your keys again (README, setup step 6)."
+        )
+    return f"{name} is not set. {hint}"

@@ -38,3 +38,15 @@ def test_region_needs_a_criterion(tmp_path):
     cfg.write_text("regions:\n  empty: {}\n")
     with pytest.raises(ValueError):
         Settings.load(cfg)
+
+
+def test_missing_key_message_names_the_folder_and_problem(tmp_path):
+    with pytest.raises(MissingSecretError, match="There is no .env file in") as exc:
+        Settings.load(tmp_path / "none.yaml").cqc_api_key
+    assert str(tmp_path) in str(exc.value)
+    # A .env holding bare keys (no NAME=) is the other common mistake. Keys must never be echoed back.
+    (tmp_path / ".env").write_text("abc123secret\nCOMPANIES_HOUSE_API_KEY=x\n")
+    with pytest.raises(MissingSecretError, match="has no line starting CQC_API_KEY=") as exc:
+        Settings.load(tmp_path / "none.yaml").cqc_api_key
+    assert "COMPANIES_HOUSE_API_KEY" in str(exc.value) and "1 line(s) without NAME=" in str(exc.value)
+    assert "abc123secret" not in str(exc.value)
