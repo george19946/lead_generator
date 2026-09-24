@@ -55,6 +55,26 @@
 </section>
 {% endif %}
 
+{% if d.examples.due_for_inspection %}
+<section>
+  <div class="wrap">
+    <h2>Due for inspection <span class="stats-note">({{ "{:,}".format(d.due_total) }} in {{ d.region_name }} now{% if d.counts.due_for_inspection %}, {{ d.counts.due_for_inspection }} newly due in {{ d.weeks | length }} weeks{% endif %})</span></h2>
+    <p class="section-intro">Services whose rating is 4 or more years old, or that have waited a year for a first
+      inspection. CQC is working through the oldest first. These are the longest waiting:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Service</th><th>Why due</th><th>Waiting</th><th>Area</th></tr></thead>
+      <tbody>
+      {% for r in d.examples.due_for_inspection %}
+        <tr><td>{{ r.name }}<span class="sub">{{ r.service }}{% if r.size %}, {{ r.size }}{% endif %}</span></td>
+          <td>{{ r.reason }}</td><td>{{ r.years }} years</td>
+          <td>{{ r.area }}<span class="sub">{{ r.district }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</section>
+{% endif %}
+
 {% if d.examples.new_companies %}
 <section>
   <div class="wrap">

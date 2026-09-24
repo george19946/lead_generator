@@ -1,5 +1,5 @@
 {% extends "base.html.j2" %}
-{% from "_macros.j2" import todo, mailto %}
+{% from "_macros.j2" import todo, mailto, places %}
 {% block title %}{{ b.brand }}: {{ b.tagline }}{% endblock %}
 {% block main %}
 <div class="wrap">
@@ -7,8 +7,8 @@
     <p class="eyebrow">For CQC compliance consultancies</p>
     <h1>Know which care services need CQC help, the week it happens.</h1>
     <p class="lead">Every Monday, {{ b.brand }} sends you the care providers in your area that have just been rated
-      poorly, just registered with CQC, or just been set up as a company. It comes with contact details and the rules
-      for contacting each one.</p>
+      poorly, just registered with CQC, just become due for an inspection, or just been set up as a company. It comes
+      with contact details and the rules for contacting each one.</p>
     <div class="actions">
       {% if b.email %}<a class="btn btn-primary" href="mailto:{{ b.email }}?subject={{ 'Free trial' | urlencode }}">Start a free trial</a>{% endif %}
       <a class="btn btn-secondary" href="sample.html">See a sample</a>
@@ -35,7 +35,7 @@
 <section id="what">
   <div class="wrap">
     <p class="eyebrow">What you get</p>
-    <h2>Four lists of warm leads, every week</h2>
+    <h2>Five lists of warm leads, every week</h2>
     <p class="section-intro">Each lead appears once, in the week it happens, so you're first to know and never see
       the same name twice.</p>
     <div class="cards">
@@ -45,6 +45,9 @@
       <div class="card"><span class="tag">First inspection due</span><h3>Newly registered services</h3>
         <p>Care services that have just registered with CQC and have never been inspected. Their first inspection is on
           its way.</p></div>
+      <div class="card"><span class="tag">Inspection coming</span><h3>Due for inspection</h3>
+        <p>Services whose rating is 4 or more years old, or that have waited a year for a first inspection. CQC is
+          working through these first: the moment for a mock inspection. You also get the full list for your area.</p></div>
       <div class="card"><span class="tag">Earliest possible</span><h3>New care companies</h3>
         <p>Companies just set up to provide care, most of which still need to register with CQC. We flag which are
           already registered.</p></div>
@@ -98,11 +101,15 @@
         {% endif %}
         <ul class="ticks">
           <li>Weekly digest every Monday</li>
-          <li>All four lead lists, plus the full never-inspected list for your area</li>
+          <li>All five lead lists, plus the full never-inspected and due-for-inspection lists for your area</li>
+          <li>Independents first: services run by large groups, which have their own quality teams, are left out</li>
           <li>Spreadsheets that open in Excel</li>
           <li>Contact rule on every lead</li>
           <li>National list of new care companies with unknown locations</li>
         </ul>
+        {% if b.places_per_area %}<p>{{ places(b) }}</p>{% endif %}
+        {% if b.exclusive_price %}<p>Want your area to yourself? <strong>£{{ "%g" | format(b.exclusive_price) }} a
+          month</strong> and no other consultancy gets your leads.</p>{% endif %}
         {% if b.trial %}<p><strong>{{ b.trial }}</strong></p>{% endif %}
         {% if b.email %}<a class="btn btn-primary" href="mailto:{{ b.email }}?subject={{ 'Free trial' | urlencode }}">Start a free trial</a>{% endif %}
       </div>
@@ -110,6 +117,12 @@
         <h3>Is it worth it?</h3>
         <p>One new client can pay for many months of leads. Poor ratings, first inspections and brand-new
           providers are the moments care services look for help, and this puts you in front of them first.</p>
+        {% if b.places_per_area %}
+        <h3>Why a limit per area?</h3>
+        <p>A lead is worth most when you're one of very few people calling. We sell each area to at most
+          {{ b.places_per_area }} {{ "consultancy" if b.places_per_area == 1 else "consultancies" }}{% if b.exclusive_price %}, or to
+          just you on the exclusive plan{% endif %}.</p>
+        {% endif %}
         <h3>Which areas?</h3>
         <p>Anywhere in England: London, a whole CQC region, a group of councils, or just the postcodes around your
           office.</p>
@@ -135,6 +148,14 @@
       <p>You could, every week, for every service in your area, and compare the results with last week's. We do that
         for you, add new companies from Companies House, and follow up companies registered at formation agents until
         they show where they operate.</p></details>
+    <details><summary>Will other consultancies get the same leads?</summary>
+      <p>{% if b.places_per_area %}Very few. {{ places(b) }}{% if b.exclusive_price %} On the exclusive plan
+        (£{{ "%g" | format(b.exclusive_price) }} a month), nobody else gets your area's leads.{% endif %}{% else %}Each
+        area is open to any number of subscribers.{% endif %}</p></details>
+    <details><summary>Do you include the big care groups?</summary>
+      <p>Not by default. Services run by large groups (CQC lists them under a brand, or they have 10 or more locations)
+        have in-house quality teams and rarely hire consultants, so we leave them out. Every lead is labelled
+        "independent" or "multi-site". Tell us if you want the groups included.</p></details>
     <details><summary>What format is it in?</summary>
       <p>A web page you can open, print or forward, and CSV spreadsheets for Excel, Numbers or your CRM.</p></details>
     <details><summary>Can I cancel?</summary>

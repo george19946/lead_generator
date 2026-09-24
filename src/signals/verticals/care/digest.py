@@ -4,19 +4,22 @@ outputs/care/<week_ending>/<region>/
     digest.html              this week's leads, all lists
     poor_ratings.csv         new Requires improvement / Inadequate ratings
     never_inspected.csv      newly registered locations with no inspection yet
+    due_for_inspection.csv   locations that became due for inspection this week (aged rating, or a year unrated)
     new_companies.csv        new care companies placed in the region
     location_unknown.csv     new care companies at formation-agent addresses (national)
     company_located.csv      formation-agent companies that have now revealed a location in the region
     never_inspected_all.csv  every never-inspected location in the region, as the database stands now
+    due_for_inspection_all.csv  every location in the region currently due for inspection, oldest first
 
-Everything except never_inspected_all.csv comes from the recorded lead events, so re-running a week
-writes the same files.
+Everything except the *_all.csv files comes from the recorded lead events, so re-running a week writes the
+same files. Locations of large groups (a CQC brand, or 10+ locations) are left out unless the region sets
+include_large_groups: they have in-house quality teams and rarely hire consultants.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -27,11 +30,22 @@ from signals.db.store import LeadRow, Store
 from signals.output.model import Cell, Column, Digest, Section, Tile
 from signals.output.writers import write_csv, write_html
 from signals.settings import RegionConfig
-from signals.verticals.care.feeds import ALL_ENGLAND, NATIONAL, CareVertical, NeverInspectedFeed
+from signals.verticals.care.feeds import (
+    ALL_ENGLAND,
+    INDEPENDENT,
+    LARGE_GROUP,
+    MULTI_SITE,
+    NATIONAL,
+    CareVertical,
+    DueForInspectionFeed,
+    NeverInspectedFeed,
+)
 from signals.verticals.care.flags import name_flag, sic_labels
 
 CHANNEL_TONE = {EMAIL_OK: "good", PHONE_CHECK_TPS: "info", POST_ONLY: "neutral"}
 RATING_TONE = {"Inadequate": "bad", "Requires improvement": "warn"}
+GROUP_TONE = {INDEPENDENT: "good", MULTI_SITE: "info", LARGE_GROUP: "neutral"}
+LOCATION_FEEDS = ("poor_ratings", "never_inspected", "due_for_inspection")
 
 LOCATION_COLUMNS = [
     Column("location_name", "Location"),
@@ -44,6 +58,7 @@ LOCATION_COLUMNS = [
     Column("phone", "Phone"),
     Column("website", "Website"),
     Column("provider_name", "Provider"),
+    Column("provider_group", "Provider size"),
     Column("legal_form", "Legal form"),
     Column("suggested_channel", "Contact rule"),
     Column("provider_company_number", "Company number"),
@@ -71,6 +86,16 @@ NEVER_COLUMNS = [
     *LOCATION_COLUMNS[1:],
 ]
 NEVER_ALL_COLUMNS = [NEVER_COLUMNS[0], NEVER_COLUMNS[1], Column("days_registered", "Days registered"), *NEVER_COLUMNS[2:]]
+DUE_COLUMNS = [
+    Column("location_name", "Location"),
+    Column("due_reason", "Why due"),
+    Column("years_waiting", "Years since rating or registration"),
+    Column("rating", "Current rating"),
+    Column("rating_date", "Rating date"),
+    Column("registration_date", "Registered"),
+    Column("dormant", "Dormant"),
+    *LOCATION_COLUMNS[1:],
+]
 COMPANY_COLUMNS = [
     Column("company_name", "Company"),
     Column("incorporated", "Incorporated"),
@@ -128,6 +153,9 @@ NOTES = [
     "email is allowed with an opt-out. “phone”: screen the number against TPS/CTPS before calling. "
     "“post only”: sole traders and partnerships with no phone number listed. An unknown legal form is "
     "treated with the stricter rule.",
+    "“Due for inspection”: the current rating is 4 or more years old, or the service has waited a year since "
+    "registering without an inspection. CQC is inspecting the oldest ratings first. Provider size: "
+    "“independent” has one location; “large group” is a CQC brand or 10+ locations.",
     "Sole-trader provider names are personal data: use them only to offer relevant services, and stop if asked.",
     "Contains CQC data © Care Quality Commission, licensed under the Open Government Licence v3.0. "
     "Contains Companies House data.",
@@ -138,11 +166,13 @@ def region_label(key: str) -> str:
     return key.replace("-", " ").replace("_", " ").title()
 
 
-def _row(lead: LeadRow | Lead) -> dict[str, Any]:
+def _row(lead: LeadRow | Lead, groups: Mapping[str, str] | None = None) -> dict[str, Any]:
     row = {**lead.data, "regions": ", ".join(lead.regions)}
     if "company_name" in row:  # derived at render time, so older events get the current labels too
         row["flag"] = name_flag(row.get("company_name"))
         row["sic_description"] = sic_labels(row.get("sic_codes"))
+    if groups is not None and row.get("provider_id") in groups:
+        row["provider_group"] = groups[row["provider_id"]]
     return row
 
 
@@ -167,7 +197,9 @@ def _provider(row: dict) -> Cell:
     sub = row.get("legal_form")
     if row.get("provider_company_number"):
         sub = f"{sub}, {row['provider_company_number']}"
-    return Cell(row.get("provider_name") or "Unknown", url=row.get("provider_url"), sub=sub)
+    group = row.get("provider_group")
+    return Cell(row.get("provider_name") or "Unknown", url=row.get("provider_url"), sub=sub,
+                badge=group, tone=GROUP_TONE.get(group, "neutral"))
 
 
 def _location(row: dict) -> Cell:
@@ -180,6 +212,11 @@ def _area(row: dict) -> Cell:
 
 def _days(since: str | None, until: date) -> int | None:
     return (until - date.fromisoformat(since)).days if since else None
+
+
+def _years(since: str | None, until: date) -> float | None:
+    days = _days(since, until)
+    return round(days / 365.25, 1) if days is not None else None
 
 
 def _sort_poor(rows: list[dict]) -> list[dict]:
@@ -234,6 +271,40 @@ def never_inspected_section(rows: list[dict], week_ending: date) -> Section:
               "first inspection is coming.",
         columns=NEVER_COLUMNS, rows=rows, csv_name="never_inspected.csv",
         html_headers=["Location", "Registered", "Service", "Area", "Contact", "Provider"], html_rows=html,
+    )
+
+
+def _sort_due(rows: list[dict]) -> list[dict]:
+    """Longest waiting first: CQC works through the oldest ratings first."""
+    rows = sorted(rows, key=lambda r: (r.get("location_name") or "", r.get("location_id") or ""))
+    return sorted(rows, key=lambda r: r.get("due_since") or "9999")
+
+
+def due_rows(rows: list[dict], week_ending: date) -> list[dict]:
+    for row in rows:
+        row["years_waiting"] = _years(row.get("due_since"), week_ending)
+    return _sort_due(rows)
+
+
+def due_for_inspection_section(rows: list[dict], week_ending: date) -> Section:
+    rows = due_rows(rows, week_ending)
+    html = []
+    for r in rows:
+        unrated = r.get("rating") is None
+        html.append([
+            _location(r),
+            Cell(r.get("due_reason"), badge=f"{r['years_waiting']} years" if r.get("years_waiting") is not None
+                 else None, tone="info" if unrated else RATING_TONE.get(r.get("rating"), "neutral")),
+            _service(r), _area(r), _contact(r), _provider(r),
+        ])
+    return Section(
+        key="due_for_inspection", title="Now due for inspection",
+        intro="Services whose CQC rating turned 4 years old this week, or that have now waited a year since registering "
+              "without an inspection. CQC is inspecting the oldest ratings first, so these are good candidates for a "
+              "mock inspection. Every service currently due in your area is in due_for_inspection_all.csv, "
+              "longest waiting first.",
+        columns=DUE_COLUMNS, rows=rows, csv_name="due_for_inspection.csv",
+        html_headers=["Location", "Why due", "Service", "Area", "Contact", "Provider"], html_rows=html,
     )
 
 
@@ -316,40 +387,92 @@ class RegionLeads:
     location_unknown: list[dict]
     company_located: list[dict]
     never_inspected_all: list[dict]
+    due_for_inspection: list[dict] = field(default_factory=list)
+    due_for_inspection_all: list[dict] = field(default_factory=list)
+    hidden_large_groups: int = 0  # location leads left out because the provider is a large group
+
+
+@dataclass
+class Selection:
+    """How to pick one region's rows: its key, and the region's settings."""
+
+    region: str
+    include_location_unknown: bool = True
+    include_large_groups: bool = True
+    groups: Mapping[str, str] | None = None  # provider ID -> size label, from the current data
+    hidden: int = 0  # counts rows left out as large groups
+
+    @classmethod
+    def for_region(cls, region: str, config: RegionConfig | None, vertical: CareVertical) -> Selection:
+        return cls(
+            region,
+            include_location_unknown=config.location_unknown if config else True,
+            include_large_groups=config.include_large_groups if config else False,
+            groups=vertical.data.provider_groups,
+        )
+
+    def row(self, lead: LeadRow | Lead) -> dict | None:
+        """The lead's row if it belongs in this region's digest, else None."""
+        if lead.feed == "location_unknown":
+            wanted = self.include_location_unknown and NATIONAL in lead.regions
+        else:
+            wanted = self.region in lead.regions or ALL_ENGLAND in lead.regions
+        if not wanted:
+            return None
+        row = _row(lead, self.groups)
+        if lead.feed in LOCATION_FEEDS and not self.include_large_groups and row.get("provider_group") == LARGE_GROUP:
+            self.hidden += 1
+            return None
+        return row
 
 
 def select_region(
-    leads: Iterable[LeadRow | Lead], region: str, *, include_location_unknown: bool = True
+    leads: Iterable[LeadRow | Lead], region: str | Selection, *, include_location_unknown: bool = True
 ) -> dict[str, list[dict]]:
     """This region's rows per feed. Location-unknown leads are national, so they go to every region."""
-    feeds = ("poor_ratings", "never_inspected", "new_companies", "location_unknown", "company_located")
+    selection = region if isinstance(region, Selection) else Selection(region, include_location_unknown)
+    feeds = ("poor_ratings", "never_inspected", "due_for_inspection", "new_companies", "location_unknown",
+             "company_located")
     out: dict[str, list[dict]] = {feed: [] for feed in feeds}
     for lead in leads:
-        if lead.feed not in out:
-            continue
-        if lead.feed == "location_unknown":
-            wanted = include_location_unknown and NATIONAL in lead.regions
-        else:
-            wanted = region in lead.regions or ALL_ENGLAND in lead.regions
-        if wanted:
-            out[lead.feed].append(_row(lead))
+        if lead.feed in out and (row := selection.row(lead)) is not None:
+            out[lead.feed].append(row)
     return out
 
 
-def never_inspected_all(all_leads: list[Lead], region: str, week_ending: date) -> list[dict]:
-    rows = []
-    for lead in all_leads:
-        if region in lead.regions or ALL_ENGLAND in lead.regions:
-            row = _row(lead)
-            row["days_registered"] = _days(row.get("registration_date"), week_ending)
-            rows.append(row)
+def _all_rows(all_leads: list[Lead], region: str | Selection) -> list[dict]:
+    selection = region if isinstance(region, Selection) else Selection(region)
+    return [row for lead in all_leads if (row := selection.row(lead)) is not None]
+
+
+def never_inspected_all(all_leads: list[Lead], region: str | Selection, week_ending: date) -> list[dict]:
+    rows = _all_rows(all_leads, region)
+    for row in rows:
+        row["days_registered"] = _days(row.get("registration_date"), week_ending)
     return _sort_by_date(rows, "registration_date", "location_name")
+
+
+def due_for_inspection_all(all_leads: list[Lead], region: str | Selection, week_ending: date) -> list[dict]:
+    """Every location due by the end of the week (the feed may have been evaluated later)."""
+    due = [lead for lead in all_leads if lead.event_date is None or lead.event_date <= week_ending]
+    return due_rows(_all_rows(due, region), week_ending)
+
+
+def _region_leads(selection: Selection, leads: Iterable[LeadRow | Lead], vertical: CareVertical,
+                  week_ending: date) -> RegionLeads:
+    chosen = select_region(leads, selection)
+    hidden = selection.hidden  # this week's leads only, not the full lists below
+    never_all = never_inspected_all(NeverInspectedFeed(vertical.data).leads(), selection, week_ending)
+    due_all = due_for_inspection_all(DueForInspectionFeed(vertical.data).leads(), selection, week_ending)
+    return RegionLeads(selection.region, **chosen, never_inspected_all=never_all, due_for_inspection_all=due_all,
+                       hidden_large_groups=hidden)
 
 
 def build_digest(leads: RegionLeads, *, heading: str, subtitle: str, week_ending: date) -> Digest:
     sections = [
         poor_ratings_section(leads.poor_ratings),
         never_inspected_section(leads.never_inspected, week_ending),
+        due_for_inspection_section(leads.due_for_inspection, week_ending),
         new_companies_section(leads.new_companies),
         company_located_section(leads.company_located),
         location_unknown_section(leads.location_unknown),
@@ -358,20 +481,30 @@ def build_digest(leads: RegionLeads, *, heading: str, subtitle: str, week_ending
     tiles = [
         Tile("New poor ratings", count["poor_ratings"], "Requires improvement or Inadequate"),
         Tile("Newly registered", count["never_inspected"], "not yet inspected"),
+        Tile("Now due for inspection", count["due_for_inspection"], "rating 4+ years old, or a year unrated"),
         Tile("New care companies", count["new_companies"], "in this region"),
         Tile("Now located", count["company_located"], "formation-agent companies found here"),
         Tile("Location unknown", count["location_unknown"], "new companies, national"),
         Tile("Never inspected", f"{len(leads.never_inspected_all):,}", "all in region, see never_inspected_all.csv"),
+        Tile("Due for inspection", f"{len(leads.due_for_inspection_all):,}",
+             "all in region, see due_for_inspection_all.csv"),
     ]
     files = [
         ("poor_ratings.csv", "new poor ratings"),
         ("never_inspected.csv", "newly registered, not yet inspected"),
+        ("due_for_inspection.csv", "newly due for inspection this week"),
         ("new_companies.csv", "new care companies in the region"),
         ("company_located.csv", "formation-agent companies now located in the region"),
         ("location_unknown.csv", "new care companies at formation-agent addresses (national)"),
         ("never_inspected_all.csv", "every never-inspected location in the region, from the latest data"),
+        ("due_for_inspection_all.csv", "every location in the region due for inspection, longest waiting first"),
     ]
-    return Digest(title=heading, subtitle=subtitle, tiles=tiles, sections=sections, files=files, notes=NOTES)
+    notes = list(NOTES)
+    if leads.hidden_large_groups:
+        notes.insert(0, f"{leads.hidden_large_groups:,} leads from large groups (a CQC brand, or 10+ locations) are "
+                        "left out: they have in-house quality teams. To include them, set "
+                        "include_large_groups: true for this region in signals.yaml.")
+    return Digest(title=heading, subtitle=subtitle, tiles=tiles, sections=sections, files=files, notes=notes)
 
 
 def write_region(folder: Path, leads: RegionLeads, *, heading: str, subtitle: str, week_ending: date) -> Path:
@@ -380,6 +513,7 @@ def write_region(folder: Path, leads: RegionLeads, *, heading: str, subtitle: st
     for section in digest.sections:
         write_csv(folder / f"{section.key}.csv", section.columns, section.rows)
     write_csv(folder / "never_inspected_all.csv", NEVER_ALL_COLUMNS, leads.never_inspected_all)
+    write_csv(folder / "due_for_inspection_all.csv", DUE_COLUMNS, leads.due_for_inspection_all)
     return write_html(folder / "digest.html", digest)
 
 
@@ -387,9 +521,9 @@ def week_subtitle(week: Week) -> str:
     return f"Week {week.start:%a %d %b} to {week.ending:%a %d %b %Y}"
 
 
-def _regions(regions: Mapping[str, RegionConfig]) -> dict[str, bool]:
-    """Region key -> include location-unknown leads. With no regions configured, one all-England digest."""
-    return {key: cfg.location_unknown for key, cfg in regions.items()} or {ALL_ENGLAND: True}
+def _regions(regions: Mapping[str, RegionConfig]) -> dict[str, RegionConfig | None]:
+    """Region key -> its config. With no regions configured, one all-England digest."""
+    return dict(regions) or {ALL_ENGLAND: None}
 
 
 def write_week(
@@ -397,11 +531,9 @@ def write_week(
 ) -> list[Path]:
     """Write every region's digest and CSVs for a week that has been run (from its recorded leads)."""
     leads = store.leads_for_week(vertical.name, week.ending)
-    never_all = NeverInspectedFeed(vertical.data).leads()
     paths = []
-    for key, with_unknown in _regions(regions).items():
-        chosen = select_region(leads, key, include_location_unknown=with_unknown)
-        region_leads = RegionLeads(key, **chosen, never_inspected_all=never_inspected_all(never_all, key, week.ending))
+    for key, config in _regions(regions).items():
+        region_leads = _region_leads(Selection.for_region(key, config, vertical), leads, vertical, week.ending)
         folder = outputs_dir / vertical.name / str(week) / key
         paths.append(write_region(folder, region_leads, heading=f"Care leads: {region_label(key)}",
                                   subtitle=week_subtitle(week), week_ending=week.ending))
@@ -422,10 +554,7 @@ def sample_leads(
         for lead in feed.leads()
         if lead.event_date is not None and start <= lead.event_date <= end
     ]
-    with_unknown = region_config.location_unknown if region_config else True
-    chosen = select_region(leads, region, include_location_unknown=with_unknown)
-    never_all = never_inspected_all(NeverInspectedFeed(vertical.data).leads(), region, end)
-    return RegionLeads(region, **chosen, never_inspected_all=never_all)
+    return _region_leads(Selection.for_region(region, region_config, vertical), leads, vertical, end)
 
 
 def write_sample(

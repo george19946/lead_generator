@@ -1,5 +1,8 @@
 # Sales outreach: finding and contacting consultancies
 
+> **For the 8-week trial, use the emails in `8-week-trial-plan.md`** (they lead with the free "due for inspection"
+> list and are sent automatically). This file is the general guide and the manual versions.
+
 Your customers are **CQC compliance consultancies**: people who help care providers:
 - register with CQC;
 - prepare for inspections (mock inspections, policies, audits);

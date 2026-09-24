@@ -1,5 +1,7 @@
 # Launch checklist and automation plan
 
+> **Start with `8-week-trial-plan.md`**: it is the cheapest, lowest-effort version of this checklist, with dates.
+
 ## Part 1: launch checklist (in this order)
 
 **Foundations (about a week)**

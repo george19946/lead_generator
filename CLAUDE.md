@@ -40,7 +40,7 @@ uv run signals site                      # website + sales sheet into ~/Signals/
   re-checks formation-agent companies. `README.md` is the user guide (beginner, Mac); `PRIVACY_NOTES.md` is final.
 - `src/signals/site/`: static business website (index, sample, privacy notice, opt-out, sales sheet); examples are
   anonymised (masked names, postcode district, no sole traders). `config/business.yaml`: template for business details.
-- `business/`: LIA, customer terms, outreach templates, launch & automation plan (for the user, not code).
+- `business/`: LIA, customer terms, outreach templates, launch & automation plan, 8-week trial plan (for the user, not code).
 - `config/signals.yaml`: the config **template**; `setup` copies it to `~/Signals/signals.yaml`, which is the one used.
 - `tests/fixtures/synthetic/`: hand-built records. `tests/fixtures/{cqc,companies_house}/`: sanitised live captures.
 
@@ -59,6 +59,15 @@ uv run signals site                      # website + sales sheet into ~/Signals/
 - Personal data: `contacts`, `nominatedIndividual` and other `person*` fields are stripped before storage
   unless `include_personal_names: true`. Sole-trader provider names are redacted in committed fixtures.
 - Never-inspected feed: the digest and feed CSV show **new entries only**. `never_inspected_all.csv` holds the full list.
+- Due-for-inspection feed: current rating ≥ 4 years old (not inspected since) or unrated a year after registering.
+  Event date = the day it became due; `due_for_inspection_all.csv` holds every one due, oldest first. The feed
+  counts only what's due by `CareData.as_of` (today unless given).
+- Provider size: "large group" = a CQC brand (`brandId`/`brandName`) or ≥ 10 registered locations in our data;
+  "independent" = one location ever (`locationIds` also lists closed ones); else "multi-site". Location leads from
+  large groups are left out of digests unless the region sets `include_large_groups`. Labels are re-derived at
+  render time, like the company flags.
+- Area limits (`places_per_area`, `exclusive_price` in business.yaml) are a sales policy shown on the site; nothing
+  enforces them yet.
 - A lead is recorded once, for the week whose window (the week + 14 days' grace) holds its event date (core/runner.py).
 - Companies at a registered-office postcode shared by ≥ 5 stored care companies (formation agents) get no region;
   they form the `location_unknown` feed (pseudo-region `national`), listed in every region's digest.

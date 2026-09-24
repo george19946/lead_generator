@@ -23,6 +23,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from signals.core.feed import Week
 from signals.settings import BusinessConfig
 from signals.verticals.care.digest import RegionLeads, region_label
+from signals.verticals.care.feeds import due_reason
 
 PAGES = ("index.html", "sample.html", "privacy.html", "opt-out.html", "sales-sheet.html")
 EXAMPLES_PER_LIST = 5
@@ -61,6 +62,7 @@ class SiteData:
     counts: dict[str, int] = field(default_factory=dict)
     examples: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     never_inspected_total: int = 0
+    due_total: int = 0
 
     @property
     def region_name(self) -> str:
@@ -82,6 +84,8 @@ class SiteData:
             (self.counts.get("never_inspected", 0), "Newly registered services", "not yet inspected by CQC"),
             (self.counts.get("new_companies", 0), "New care companies",
              f"about {self.per_week('new_companies')} a week"),
+            (self.due_total, "Due for inspection",
+             f"services in {self.region_name} rated 4+ years ago, or a year without an inspection"),
             (self.never_inspected_total, "Never inspected", f"services in {self.region_name} awaiting a first inspection"),
         ]
         return [(f"{value:,}", label, note) for value, label, note in items if value]
@@ -134,6 +138,20 @@ def anonymise(leads: RegionLeads) -> dict[str, list[dict[str, Any]]]:
         if _safe(r) and not r.get("flag")
     ]
 
+    due = [
+        {
+            "name": mask_name(r.get("location_name")),
+            "service": r.get("service_types") or "Care service",
+            "area": r.get("local_authority") or "",
+            "district": district(r.get("postcode")),
+            "reason": due_reason(r.get("rating"), (r.get("due_since") or "")[:4]).replace(" on ", " in "),
+            "years": r.get("years_waiting"),
+            "size": r.get("provider_group"),
+        }
+        for r in leads.due_for_inspection_all
+        if _safe(r)
+    ]
+
     def newest(rows: list[dict], key: str) -> list[dict]:
         return sorted(rows, key=lambda r: (r.get(key) or "", r["name"]), reverse=True)[:EXAMPLES_PER_LIST]
 
@@ -141,6 +159,7 @@ def anonymise(leads: RegionLeads) -> dict[str, list[dict[str, Any]]]:
         "poor_ratings": newest(poor, "rating_date"),
         "never_inspected": newest(never, "registered"),
         "new_companies": newest(companies, "incorporated"),
+        "due_for_inspection": due[:EXAMPLES_PER_LIST],  # already longest-waiting first
     }
 
 
@@ -150,12 +169,14 @@ def site_data(business: BusinessConfig, region: str, weeks: list[Week], leads: R
         data.counts = {
             "poor_ratings": len(leads.poor_ratings),
             "never_inspected": len(leads.never_inspected),
+            "due_for_inspection": len(leads.due_for_inspection),
             "new_companies": len(leads.new_companies),
             "company_located": len(leads.company_located),
             "location_unknown": len(leads.location_unknown),
         }
         data.examples = anonymise(leads)
         data.never_inspected_total = len(leads.never_inspected_all)
+        data.due_total = len(leads.due_for_inspection_all)
     return data
 
 

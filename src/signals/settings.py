@@ -68,6 +68,9 @@ class RegionConfig(BaseModel):
     postcode_areas: list[str] = []
     # Also list new companies whose location is unknown (formation-agent addresses) in this region's digest.
     location_unknown: bool = True
+    # Also list services run by large groups (a CQC brand, or 10+ locations). They have their own quality teams and
+    # rarely hire consultants, so they are left out by default.
+    include_large_groups: bool = False
 
     @model_validator(mode="after")
     def _at_least_one_criterion(self) -> RegionConfig:
@@ -100,6 +103,8 @@ class BusinessConfig(BaseModel):
     price_per_region: float | None = 149
     price_note: str = "per region, per month, excluding VAT. Cancel any time."
     trial: str = ""
+    places_per_area: int | None = 2  # consultancies sold each area (none/0: no limit)
+    exclusive_price: float | None = 249  # monthly price to have an area to yourself (none: not offered)
     showcase_region: str | None = None
 
     def missing(self) -> list[str]:

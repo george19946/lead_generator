@@ -128,10 +128,15 @@ Each region's folder `~/Signals/outputs/care/<week>/<region>/` contains:
 | `digest.html` | The digest: open it in any browser, print it, or save it as PDF |
 | `poor_ratings.csv` | New poor ratings |
 | `never_inspected.csv` | Newly registered, not yet inspected |
+| `due_for_inspection.csv` | Newly due for inspection this week: rating turned 4 years old, or a year unrated |
 | `new_companies.csv` | New care companies in the region |
 | `company_located.csv` | Formation-agent companies now located in the region |
 | `location_unknown.csv` | New care companies at formation-agent addresses (national) |
 | `never_inspected_all.csv` | **Every** never-inspected location in the region, not just this week's |
+| `due_for_inspection_all.csv` | **Every** location in the region due for inspection, longest waiting first |
+
+Each CQC lead is labelled **independent** (one location), **multi-site**, or **large group** (a CQC brand, or 10+
+locations). Large groups have their own quality teams, so they're left out unless the region says otherwise (below).
 
 The `.csv` files open in Excel or Numbers: double-click them in Finder.
 
@@ -180,6 +185,7 @@ regions:
   kent-medway:
     local_authorities: [Kent, Medway]        # council names, as CQC spells them
     location_unknown: false                  # leave out the national "location unknown" list
+    include_large_groups: true               # also list services run by large groups (left out by default)
 ```
 
 CQC region names are: London, South East, South West, East, East Midlands, West Midlands,
@@ -317,10 +323,12 @@ The `business/` folder in the code holds:
 - a signed-off-ready **legitimate interests assessment**;
 - short **customer terms**;
 - **sales outreach templates**;
-- a **launch checklist and automation plan** (`business/launch-and-automation.md`).
+- a **launch checklist and automation plan** (`business/launch-and-automation.md`);
+- the **8-week trial plan** (`business/8-week-trial-plan.md`): start here.
 
 To build your website and sales sheet:
-1. Fill in `~/Signals/business.yaml` (`open -e ~/Signals/business.yaml`).
+1. Fill in `~/Signals/business.yaml` (`open -e ~/Signals/business.yaml`). `places_per_area` (default 2) and
+   `exclusive_price` (default £249) set the area limits shown on the website and sales sheet.
 2. Run `uv run signals site`.
 3. Open `~/Signals/site/index.html` to check it. Upload the `site` folder to any static web host.
 

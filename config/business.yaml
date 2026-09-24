@@ -20,5 +20,9 @@ price_per_region: 149                 # pounds per month, per region
 price_note: "per region, per month, excluding VAT. Cancel any time."
 trial: "Your first 4 weeks free, no card needed."
 
+# Area limits: the same leads sold to many consultancies are worth less to each, so each area is capped.
+places_per_area: 2                    # consultancies per area (0 for no limit)
+exclusive_price: 249                  # pounds per month to have an area to yourself (delete the number to not offer it)
+
 # The region used for the live numbers and anonymised examples on the website (a key from signals.yaml).
 showcase_region: london

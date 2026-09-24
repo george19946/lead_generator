@@ -61,8 +61,9 @@ def test_week_outputs_per_region(store, tmp_path):
     assert [p.parent.name for p in paths] == ["london", "east-london"]
     folder = tmp_path / "care" / "2026-09-20" / "london"
     assert sorted(p.name for p in folder.iterdir()) == [
-        "company_located.csv", "digest.html", "location_unknown.csv", "never_inspected.csv", "never_inspected_all.csv",
-        "new_companies.csv", "poor_ratings.csv",
+        "company_located.csv", "digest.html", "due_for_inspection.csv", "due_for_inspection_all.csv",
+        "location_unknown.csv", "never_inspected.csv", "never_inspected_all.csv", "new_companies.csv",
+        "poor_ratings.csv",
     ]
     poor = _csv(folder / "poor_ratings.csv")
     assert [(r["Location"], r["Rating"], r["Previous rating"], r["Change"]) for r in poor] == [

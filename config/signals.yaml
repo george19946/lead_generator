@@ -24,6 +24,8 @@ sources:
 #   local_authorities: list of local authority names as CQC spells them, e.g. [Hackney, Tower Hamlets]
 #   postcode_areas:    postcode areas ("E", "SE") or districts ("SE1", "N16")
 #   location_unknown:  also list new companies at formation-agent addresses (default true; false to leave out)
+#   include_large_groups: also list services run by large groups, i.e. a CQC brand or 10+ locations (default false:
+#                      they have in-house quality teams, so they're rarely consultancy clients)
 # A lead matches a region if it matches ANY of the criteria given.
 # After adding or widening a region, run `uv run signals backfill --only-new` to fetch its locations.
 regions:

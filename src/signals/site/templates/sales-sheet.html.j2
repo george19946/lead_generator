@@ -1,4 +1,4 @@
-{% from "_macros.j2" import todo %}
+{% from "_macros.j2" import todo, places %}
 <!doctype html>
 <html lang="en-GB">
 <head>
@@ -37,8 +37,9 @@
 <div class="sheet">
   <p class="eyebrow">{{ b.brand }} · for CQC compliance consultancies</p>
   <h1>Your next clients, delivered every Monday.</h1>
-  <p class="lead">The care services in your area that have just been rated poorly, just registered with CQC, or just
-    been set up as companies, with contact details and the rules for contacting each one.</p>
+  <p class="lead">The care services in your area that have just been rated poorly, just registered with CQC, just
+    become due for an inspection, or just been set up as companies, with contact details and the rules for contacting
+    each one.</p>
 
   {% if d.has_numbers %}
   <h2>{{ d.region_name }}, last {{ d.weeks | length }} weeks ({{ d.period }})</h2>
@@ -55,9 +56,11 @@
       <ul>
         <li><strong>New poor ratings</strong>, with the previous rating: services that need an action plan now.</li>
         <li><strong>Newly registered services</strong> facing their first inspection.</li>
+        <li><strong>Due for inspection</strong>: ratings 4+ years old, or a year without an inspection. CQC is
+          inspecting these first.</li>
         <li><strong>New care companies</strong> that still need to register with CQC.</li>
         <li><strong>Companies now located</strong>: new companies we followed until they showed where they operate.</li>
-        <li>The full <strong>never-inspected list</strong> for your area, as a spreadsheet.</li>
+        <li>The full <strong>never-inspected</strong> and <strong>due-for-inspection</strong> lists for your area.</li>
       </ul>
     </div>
     <div>
@@ -66,6 +69,7 @@
         <li>First to know: each lead arrives the week it happens, once.</li>
         <li>Official sources: CQC and Companies House, checked every week.</li>
         <li>Ready to use: phone, website and links, plus Excel-ready spreadsheets.</li>
+        <li>Independents first: large groups with their own quality teams are left out.</li>
         <li>Compliant: every lead is labelled "email OK", "phone (check TPS/CTPS)" or "post only".</li>
       </ul>
     </div>
@@ -73,7 +77,9 @@
 
   <h2>Price</h2>
   <p>{% if b.price_per_region %}<strong>£{{ "%g" | format(b.price_per_region) }}</strong> {{ b.price_note }}{% else %}{{ todo("price") }}{% endif %}
-    {%+ if b.trial %}<strong>{{ b.trial }}</strong>{% endif %} Choose any area in England: a CQC region, councils or postcodes.</p>
+    {%+ if b.trial %}<strong>{{ b.trial }}</strong>{% endif %} Choose any area in England: a CQC region, councils or postcodes.
+    {%+ if b.places_per_area %}{{ places(b) }}{% endif %}
+    {%+ if b.exclusive_price %}Or have your area to yourself for <strong>£{{ "%g" | format(b.exclusive_price) }} a month</strong>.{% endif %}</p>
 
   <div class="contact">
     <span>{{ b.email or todo("your email") }}{% if b.phone %} · {{ b.phone }}{% endif %}</span>

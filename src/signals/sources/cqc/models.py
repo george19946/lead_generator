@@ -109,6 +109,8 @@ class _Addressed(CqcModel):
     main_phone_number: str | None = None
     website: str | None = None
     inspection_directorate: str | None = None
+    brand_id: str | None = None  # CQC "brand": set for locations and providers that belong to a group
+    brand_name: str | None = None
     regulated_activities: list[Named] = []
     current_ratings: CurrentRatings | None = None
     historic_ratings: list[HistoricRating] = []

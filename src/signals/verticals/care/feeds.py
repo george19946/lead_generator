@@ -7,6 +7,10 @@
   current list is available from `NeverInspectedFeed.leads()` (for never_inspected_all.csv).
 - poor_ratings: locations currently rated Requires improvement or Inadequate.
   Trigger: the rating and its publication date, so a re-rating is a new lead.
+- due_for_inspection: locations whose current rating is 4+ years old, or that have gone a year since registering
+  without an inspection. CQC prioritises the oldest ratings, so these are likely to be inspected soon.
+  Trigger: the day the location became due, so each is a weekly lead once; the full list is
+  `DueForInspectionFeed.leads()` (for due_for_inspection_all.csv).
 - location_unknown: new care companies registered at a formation agent (shared registered office), so they
   can't be placed in a region; listed nationally.
 - company_located: those formation-agent companies once they reveal a real location (see CompanyLocatedFeed).
@@ -17,12 +21,13 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from functools import cached_property
 from typing import Any
 
 from pydantic import ValidationError
 
+from signals.core.clock import utcnow
 from signals.core.feed import Lead
 from signals.core.legal_form import LegalForm, suggested_channel
 from signals.core.regions import PostcodeLookup
@@ -31,11 +36,21 @@ from signals.sources.companies_house.legal_form import legal_form as ch_legal_fo
 from signals.sources.companies_house.legal_form import normalise_company_number
 from signals.sources.companies_house.models import ChCompany
 from signals.sources.cqc.legal_form import provider_legal_form
-from signals.sources.cqc.models import CqcLocation, CqcProvider, EffectiveRating, normalise_rating
+from signals.sources.cqc.models import (
+    CqcLocation,
+    CqcProvider,
+    EffectiveRating,
+    normalise_rating,
+)
 from signals.verticals.care.collect import ASC_DIRECTORATE, CareScope
 from signals.verticals.care.flags import name_flag, sic_labels
 from signals.verticals.care.linking import CqcLinker
-from signals.verticals.care.watch import is_shared, office_postcode, postcode_counts, postcode_key
+from signals.verticals.care.watch import (
+    is_shared,
+    office_postcode,
+    postcode_counts,
+    postcode_key,
+)
 
 log = logging.getLogger(__name__)
 
@@ -45,13 +60,21 @@ ALL_ENGLAND = "england"
 NATIONAL = "national"  # pseudo-region for leads that can't be placed (location_unknown)
 CH_PROFILE = "https://find-and-update.company-information.service.gov.uk/company/"
 
+# Provider size, so customers can focus on the small independents that hire consultants.
+INDEPENDENT, MULTI_SITE, LARGE_GROUP = "independent", "multi-site", "large group"
+LARGE_GROUP_LOCATIONS = 10  # registered locations in our data; a CQC brand also marks a large group
+
+RATING_DUE_YEARS = 4  # a rating this old is "aged": CQC is working through these first
+UNRATED_DUE_DAYS = 365  # registered this long ago and still never inspected
+
 
 class CareData:
     """Everything the feeds need, loaded from the store once per run."""
 
-    def __init__(self, store: Store, scope: CareScope):
+    def __init__(self, store: Store, scope: CareScope, as_of: date | None = None):
         self.store = store
         self.scope = scope
+        self.as_of = as_of or utcnow().date()  # "due for inspection" counts only what is due by this date
         self.skipped = 0
 
     def _parse(self, model: type, entity: StoredEntity) -> Any:
@@ -90,6 +113,40 @@ class CareData:
         return out
 
     @cached_property
+    def registered_counts(self) -> Counter[str]:
+        """Registered locations per provider, as far as our data goes (customer regions only)."""
+        return Counter(
+            loc.provider_id for _, loc in self.locations if loc.provider_id and loc.registration_status == "Registered"
+        )
+
+    @cached_property
+    def branded_providers(self) -> set[str]:
+        """Providers CQC lists under a brand, i.e. part of a group."""
+        branded = {pid for pid, p in self.providers.items() if p.brand_id or p.brand_name}
+        return branded | {loc.provider_id for _, loc in self.locations
+                          if loc.provider_id and (loc.brand_id or loc.brand_name)}
+
+    def provider_group(self, provider_id: str | None) -> str | None:
+        """independent (one location), multi-site, or large group (a CQC brand, or 10+ registered locations).
+
+        A provider's `locationIds` also lists closed locations, so it only proves a provider is single-site.
+        """
+        if not provider_id:
+            return None
+        registered = self.registered_counts[provider_id]
+        if provider_id in self.branded_providers or registered >= LARGE_GROUP_LOCATIONS:
+            return LARGE_GROUP
+        provider = self.providers.get(provider_id)
+        ever = len(provider.location_ids) if provider else 0
+        return INDEPENDENT if max(ever, registered) <= 1 else MULTI_SITE
+
+    @cached_property
+    def provider_groups(self) -> dict[str, str]:
+        """provider ID -> size label, for relabelling recorded leads with current data."""
+        ids = set(self.providers) | set(self.registered_counts)
+        return {pid: label for pid in ids if (label := self.provider_group(pid))}
+
+    @cached_property
     def postcodes(self) -> PostcodeLookup:
         lookup = PostcodeLookup()
         for _, loc in self.locations:
@@ -120,12 +177,13 @@ class CareData:
         return tuple(self.scope.matcher.match(region=region, local_authority=local_authority, postcode=postcode))
 
 
-def _provider_fields(provider: CqcProvider | None, has_phone: bool) -> dict[str, Any]:
+def _provider_fields(data: CareData, provider: CqcProvider | None, has_phone: bool) -> dict[str, Any]:
     form = provider_legal_form(provider) if provider else LegalForm.UNKNOWN
     number = normalise_company_number(provider.companies_house_number) if provider else None
     return {
         "provider_id": provider.provider_id if provider else None,
         "provider_name": provider.name if provider else None,
+        "provider_group": data.provider_group(provider.provider_id) if provider else None,
         "provider_ownership": provider.ownership_type if provider else None,
         "provider_company_number": number,
         "provider_url": provider.profile_url if provider else None,
@@ -153,7 +211,7 @@ def location_fields(data: CareData, entity: StoredEntity, loc: CqcLocation) -> d
         "phone": phone,
         "website": loc.website or (provider.website if provider else None),
         "cqc_url": loc.profile_url,
-        **_provider_fields(provider, bool(phone)),
+        **_provider_fields(data, provider, bool(phone)),
     }
 
 
@@ -334,6 +392,79 @@ class NeverInspectedFeed:
         return out
 
 
+def add_years(day: date, years: int) -> date:
+    try:
+        return day.replace(year=day.year + years)
+    except ValueError:  # 29 February
+        return day.replace(year=day.year + years, day=28)
+
+
+def due_reason(rating: str | None, since: str) -> str:
+    """'last rated Good on 2019-05-02', 'inspected but not rated on …', or 'never inspected, registered …'."""
+    if rating is None:
+        return f"never inspected, registered {since}"
+    return f"last rated {rating} on {since}" if rating in RATING_RANK else f"{rating.lower()} on {since}"
+
+
+class DueForInspectionFeed:
+    """Locations likely to be inspected soon: an aged rating, or a year without a first inspection.
+
+    CQC has a large backlog and is working through the oldest ratings first, so these services are the ones to
+    offer a mock inspection. The lead's date is the day it became due, so each shows up once as a weekly lead
+    (on the weekly list); the digest's due_for_inspection_all.csv holds every one currently due.
+    """
+
+    name = "due_for_inspection"
+
+    def __init__(self, data: CareData):
+        self.data = data
+
+    @staticmethod
+    def due(loc: CqcLocation) -> tuple[str, date, date] | None:
+        """(kind, since, due date): kind "rated" (since = the rating's date) or "unrated" (since = registration)."""
+        if not _is_registered_asc(loc):
+            return None
+        rating = loc.overall_rating
+        if rating is None:
+            if NeverInspectedFeed.qualifies(loc) and loc.registration_date:
+                return "unrated", loc.registration_date, loc.registration_date + timedelta(days=UNRATED_DUE_DAYS)
+            return None
+        if rating.published is None:
+            return None
+        inspected = loc.last_inspection.date if loc.last_inspection else None
+        if inspected and inspected > rating.published:
+            return None  # inspected since the rating: a new report is on its way
+        return "rated", rating.published, add_years(rating.published, RATING_DUE_YEARS)
+
+    def leads(self) -> list[Lead]:
+        out = []
+        for entity, loc in self.data.locations:
+            due = self.due(loc)
+            if due is None or due[2] > self.data.as_of:
+                continue
+            kind, since, when = due
+            rating = loc.overall_rating
+            reason = due_reason(rating.rating if rating else None, since.isoformat())
+            out.append(
+                Lead(
+                    feed=self.name,
+                    entity_key=f"cqc:location:{loc.location_id}",
+                    trigger_key=f"due:{kind}:{since.isoformat()}",
+                    event_date=when,
+                    regions=_location_regions(self.data, loc),
+                    data={
+                        **location_fields(self.data, entity, loc),
+                        "due_reason": reason,
+                        "due_since": since.isoformat(),
+                        "due_date": when.isoformat(),
+                        "rating": rating.rating if rating else None,
+                        "rating_date": rating.published.isoformat() if rating and rating.published else None,
+                    },
+                )
+            )
+        return out
+
+
 def rating_change(previous: str | None, current: str) -> str:
     if previous is None:
         return "first rating"
@@ -420,13 +551,14 @@ class PoorRatingsFeed:
 class CareVertical:
     name = "care"
 
-    def __init__(self, store: Store, scope: CareScope):
-        self.data = CareData(store, scope)
+    def __init__(self, store: Store, scope: CareScope, as_of: date | None = None):
+        self.data = CareData(store, scope, as_of)
 
     def feeds(self) -> list[Any]:
         return [
             PoorRatingsFeed(self.data),
             NeverInspectedFeed(self.data),
+            DueForInspectionFeed(self.data),
             NewCompaniesFeed(self.data),
             LocationUnknownFeed(self.data),
             CompanyLocatedFeed(self.data),

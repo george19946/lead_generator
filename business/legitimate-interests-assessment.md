@@ -14,7 +14,8 @@ kept in case the ICO or anyone else asks. It is not legal advice: have it checke
 **What we do.** Each week we read two public registers, the Care Quality Commission (CQC) register and Companies
 House. We find care services and companies that have just:
 - received a poor rating;
-- registered with CQC and not yet been inspected; or
+- registered with CQC and not yet been inspected;
+- become due for an inspection (a rating 4 or more years old, or a year without a first inspection); or
 - been incorporated with a care activity code.
 
 We sell these lists to CQC compliance consultancies, who may offer those services help.

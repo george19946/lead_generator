@@ -1,5 +1,25 @@
 # Progress
 
+## Stress test follow-ups: due-for-inspection list, group filter, area limits (2026-09-24)
+- **Why:** the viability stress test found weekly volumes thin (London: about 3 poor ratings and 5 new registrations a
+  week), many "hot" leads belonging to big groups, and the same leads going to every customer.
+- **`due_for_inspection` feed** (`feeds.DueForInspectionFeed`): registered adult social care locations whose current
+  rating is ≥ 4 years old (and not inspected since), or unrated ≥ 365 days after registering. CQC is prioritising
+  aged ratings (83.5% of community services unrated or rated 4+ years ago, Homecare Association, May 2026).
+  - Weekly leads = what became due that week. `due_for_inspection_all.csv` lists every one, longest waiting first.
+  - Real data (two boroughs, scratchpad DB): 77 due, of which 39 are never rated and 50 are independents.
+- **Provider size labels**: independent / multi-site / large group, from CQC `brandId`/`brandName` (now in the
+  models) and registered-location counts. Live check: a provider's `locationIds` includes deregistered locations
+  (MiHomecare: 18 of 20 sampled were deregistered), so it's only used to prove "independent".
+  - Large groups are hidden by default (`RegionConfig.include_large_groups`), with a count in the digest notes.
+- **Area limits**: `places_per_area` (2) and `exclusive_price` (£249) in `business.yaml`, shown on the site, the sales
+  sheet and in the terms. The site also shows the due-for-inspection total and anonymised examples.
+- `business/8-week-trial-plan.md`: an email-only trial for about £70 and 15 hours, with decision rules.
+  - Its automation is the revised **Milestone 6** (awaiting go-ahead): `signals prospects`, `signals outreach` (3-email
+    sequence, 25/day cap, stops on reply via IMAP, do-not-contact list), `signals customer`, `signals send`
+    (digests plus lifecycle emails), and a Monday scoreboard email.
+- 197 tests.
+
 ## Business launch kit (2026-09-24)
 - **`signals site`** (`src/signals/site/`) builds a static website into `~/Signals/site` from `~/Signals/business.yaml`
   (template `config/business.yaml`, copied by `setup`) and the database:
@@ -28,6 +48,7 @@
   - trial reminders with a Stripe link;
   - opt-out notifications to customers who received the lead;
   - a new-consultancy prospect list from Companies House.
+  - (Superseded by the revised Milestone 6 in the entry above.)
 
 ## Data home: user data kept apart from the code (2026-09-24)
 - **Problem:** the user updated by pasting the new code over the old folder and lost `.env` and `data/`, so had to

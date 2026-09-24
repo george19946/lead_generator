@@ -404,6 +404,7 @@ QUALIFYING = {
     "company_located": "formation-agent companies located so far",
     "never_inspected": "never inspected in total",
     "poor_ratings": "currently rated Requires improvement or Inadequate",
+    "due_for_inspection": "due for inspection in total (rating 4+ years old, or a year unrated)",
 }
 
 
@@ -436,6 +437,8 @@ def _describe(feed: str, d: dict) -> str:
     if feed == "poor_ratings":
         was = f", was {d['previous_rating']}" if d.get("previous_rating") else ""
         return f"{where}: {d['rating']} ({d.get('rating_date') or 'undated'}{was}); {d['suggested_channel']}"
+    if feed == "due_for_inspection":
+        return f"{where}: {d.get('due_reason')}; {d.get('provider_group') or 'size unknown'}; {d['suggested_channel']}"
     return f"{where}: registered {d.get('registration_date')}; {d['suggested_channel']}"
 
 
